@@ -50,14 +50,27 @@ const VerifyHotelOwnerOtp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white p-4">
-      <div className="bg-black border-2 border-red-500 rounded-xl p-6 max-w-sm w-full text-center shadow-lg">
-        <h2 className="text-2xl font-bold text-red-500 mb-4">Verify OTP</h2>
-        <p className="text-gray-400 mb-4">Enter the 4-digit OTP sent to your email.</p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden font-[Poppins] p-6">
+      {/* Background Decorations */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-100/50 rounded-full blur-[120px] mix-blend-multiply animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-red-100/50 rounded-full blur-[120px] mix-blend-multiply animate-pulse delay-700"></div>
 
-        {error && <p className="text-red-500 text-md mb-4">{error}</p>}
+      <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] w-full max-w-md border border-slate-100 relative z-10 text-center">
 
-        <div className="flex justify-center gap-2 mb-4">
+        <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-sm border border-red-100">
+          <FaKey className="text-3xl" />
+        </div>
+
+        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-3">Verification</h2>
+        <p className="text-slate-500 font-medium mb-8">Enter the 4-digit code sent to <br /><span className="text-slate-900 font-bold">{email}</span></p>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-xl mb-6 border border-red-100">
+            {error}
+          </div>
+        )}
+
+        <div className="flex justify-center gap-4 mb-8">
           {otp.map((digit, index) => (
             <input
               key={index}
@@ -65,17 +78,21 @@ const VerifyHotelOwnerOtp = () => {
               value={digit}
               onChange={(e) => handleOtpChange(e, index)}
               maxLength={1}
-              className="w-12 h-12 bg-black text-white text-center text-2xl border border-red-500 rounded-lg focus:outline-none"
+              className="w-16 h-16 bg-slate-50 text-slate-900 text-center text-3xl font-bold border-2 border-slate-200 rounded-2xl focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition-all shadow-sm"
             />
           ))}
         </div>
 
         <button
           onClick={handleOtpSubmit}
-          className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold text-lg py-2 rounded-lg"
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
         >
-          <FaKey /> Submit OTP
+          <FaKey /> <span>Verify Account</span>
         </button>
+
+        <p className="text-slate-400 text-sm font-medium mt-6">
+          Didn't receive the code? <span className="text-red-500 font-bold cursor-pointer hover:underline">Resend</span>
+        </p>
       </div>
     </div>
   );

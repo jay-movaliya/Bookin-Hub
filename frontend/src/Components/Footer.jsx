@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { FaPlaneDeparture, FaHotel, FaCarAlt, FaEnvelope, FaPhone, FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
+import { FaHotel, FaCarAlt, FaEnvelope, FaPhone, FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
 
 // Import the logo (adjust the path based on your project structure)
 import Logo from "../assets/logo.png"; // Replace with your actual logo path
@@ -29,7 +29,7 @@ const Footer = () => {
             />
           </div>
           <p className="text-gray-400 text-md mt-4 leading-relaxed max-w-xs mx-auto md:mx-0">
-            Book your next cab, hotel, or flight with ease. Your journey starts here.
+            Book your next cab or hotel with ease. Your journey starts here.
           </p>
           <motion.div
             className="mt-6 flex justify-center md:justify-start space-x-4"
@@ -37,7 +37,6 @@ const Footer = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <FaPlaneDeparture className="text-red-500 text-2xl" />
             <FaHotel className="text-red-500 text-2xl" />
             <FaCarAlt className="text-red-500 text-2xl" />
           </motion.div>
@@ -55,7 +54,6 @@ const Footer = () => {
           <ul className="space-y-4">
             {[
               { name: "Hotels", link: "/booking/hotel" },
-              { name: "Flights", link: "/booking/flight" },
               { name: "Cabs", link: "/booking/cab" },
               { name: "About", link: "/about" },
             ].map((item, index) => (

@@ -5,7 +5,6 @@ import { FaPlane, FaHotel, FaSignOutAlt } from "react-icons/fa";
 function SuperSideBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const isFlightActive = location.pathname.startsWith("/super/dashboard/flight");
   const isHotelActive = location.pathname.startsWith("/super/dashboard/hotel");
 
   const handleLogout = () => {
@@ -25,26 +24,11 @@ function SuperSideBar() {
         <ul className="space-y-2">
           <li>
             <Link
-              to="/super/dashboard/flight"
-              className={`flex items-center px-6 py-3 text-white text-base font-medium transition-all duration-200 ${
-                isFlightActive
-                  ? "bg-red-600"
-                  : "hover:bg-red-900 hover:shadow-md"
-              }`}
-              aria-label="Flight Admin Dashboard"
-            >
-              <FaPlane className="mr-3 text-lg" />
-              <span>Flight Admin</span>
-            </Link>
-          </li>
-          <li>
-            <Link
               to="/super/dashboard/hotel"
-              className={`flex items-center px-6 py-3 text-white text-base font-medium transition-all duration-200 ${
-                isHotelActive
+              className={`flex items-center px-6 py-3 text-white text-base font-medium transition-all duration-200 ${isHotelActive
                   ? "bg-red-600"
                   : "hover:bg-red-900 hover:shadow-md"
-              }`}
+                }`}
               aria-label="Hotel Admin Dashboard"
             >
               <FaHotel className="mr-3 text-lg" />

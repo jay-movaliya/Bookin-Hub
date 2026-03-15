@@ -19,6 +19,9 @@ const verifyUser = asyncHandler(async (req, res, next) => {
         // if (!owner) {
         // throw new ApiError(404, "Invalid Access Token")
         // }
+        if(!decodedinfo.user){
+            return res.status(401).json({message:"Unauthorized Access!Please Log in.",status:false})
+        }
         req.user = decodedinfo.user
         next()
     } catch (error) {

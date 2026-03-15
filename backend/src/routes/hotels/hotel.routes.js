@@ -16,7 +16,8 @@ import {
     deleteRoom,
     getOwnerRooms,
     getHotelById,
-    getRoomByhotelId
+    getRoomByhotelId,
+    
 } from "../../controller/hotels/hotel.controller.js";
 import { upload } from "../../middlewares/multer.middleware.js";
 import { verifyHotelOwner } from "../../middlewares/Hotels/verifyHotelOwner.middleware.js";

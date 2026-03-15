@@ -390,15 +390,7 @@ const getRoomByhotelId = asyncHandler(async (req, res) => {
 const searchHotels = asyncHandler(async (req, res) => {
     const { name, area, district, pincode } = req.query;
 
-    // Check if at least one search parameter is provided
-    if (!name && !area && !district && !pincode) {
-        return res.status(400).json({
-            message: "Please provide at least one search parameter",
-            status: false
-        });
-    }
-
-    // Build the filter object
+    // If no search parameters are provided, return all hotels
     const filter = {};
     if (name) filter.name = { $regex: name, $options: "i" };
     if (area) filter["address.area"] = { $regex: area, $options: "i" };
@@ -485,6 +477,9 @@ const getOwnerRooms = asyncHandler(async (req, res) => {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
+
+
+
 
 export {
     createHotel,

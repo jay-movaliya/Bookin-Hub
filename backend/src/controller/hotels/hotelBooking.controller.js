@@ -16,8 +16,9 @@ const createBooking = asyncHandler(async (req, res) => {
             totalAmount,
             personDetails
         } = req.body;
-
+        
         const userId = req.user._id;
+        console.log("called",userId);
 
         if (!personDetails || !Array.isArray(personDetails) || personDetails.length === 0) {
             return res.status(400).json({ message: "At least one person detail is required." });

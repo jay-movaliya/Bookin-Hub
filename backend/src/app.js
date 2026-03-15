@@ -7,7 +7,7 @@ import path from 'path';
 
 const uploadsDir = path.join(process.cwd(), 'uploads', 'vehicles');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 import "./routes/Cabs/autoCancelBookings.js"
 
@@ -18,7 +18,6 @@ import Riderapi from "./routes/Cabs/Rider_routes.js"
 import Booking from "./routes/Cabs/booking.js"
 import { booking } from "./models/Cabs/cab_booking_model.js";
 import Razorpay from "razorpay";
-import { flightRouter } from "./routes/flight/flight.route.js";
 import dotenv from "dotenv";
 dotenv.config();
 import "./services/hotel/completeBookingCron.js"
@@ -40,11 +39,6 @@ app.use("/api/Rv/vehicle", vehicleapi)
 app.use("/api/Rv/booking", Booking)
 app.use("/api/Rv/Rider", Riderapi)
 
-//------------FLIGHT ROUTES-------------------------------------
-app.use("/api/flightadmin", flightRouter);
-app.use("/api/flight", flightBookingRouter);
-
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 //------------HOTEL ROUTES-------------------------------------
 
 import { hotelOwnerRouter } from "./routes/hotels/hotelOwner.routes.js"
@@ -56,7 +50,6 @@ import { hotelRouter } from "./routes/hotels/hotel.routes.js"
 app.use("/api/hotel", hotelRouter)
 
 import { hotelBookingRouter } from "./routes/hotels/hotelBooking.routes.js";
-import { flightBookingRouter } from "./routes/flight/flightBooking.route.js";
 app.use("/api/booking", hotelBookingRouter)
 
 // ------------------------------------------------------------
@@ -72,14 +65,17 @@ app.post("/create-order", async (req, res) => {
   try {
     const { amount, currency } = req.body;
     const options = {
-      amount: amount * 100, // Convert to paise
+      amount: amount, // Convert to paise
       currency: currency || "INR",
       receipt: `receipt_${Date.now()}`,
     };
 
+    console.log("Befor Order")
     const order = await razorpay.orders.create(options);
+    console.log("after Order")
     res.json({ success: true, order });
   } catch (error) {
+    console.log(error)
     res.status(500).json({ success: false, message: error.message });
   }
 });

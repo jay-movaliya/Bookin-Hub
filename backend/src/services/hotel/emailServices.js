@@ -60,7 +60,7 @@ export const sendBookingConfirmation = async ({ email, userName, bookingId, hote
           <p><strong>Booking ID:</strong> ${bookingId}</p>
           <p><strong>Check-in:</strong> ${new Date(checkInDate).toLocaleDateString()}</p>
           <p><strong>Check-out:</strong> ${new Date(checkOutDate).toLocaleDateString()}</p>
-          <p><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</p>
+          <p><strong>Total Amount:</strong> ₹ ${totalAmount.toFixed(2)}</p>
         </div>
         
         <div style="margin: 30px 0; text-align: center;">

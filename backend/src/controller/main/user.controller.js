@@ -19,7 +19,7 @@ const registerUser = async (req, res) => {
       .json(new ApiResponse(400, null, "User already exists"));
   }
 
-  const otp = Math.floor(Math.random() * 10000);
+  const otp = Math.floor(1000 + Math.random() * 9000);
   const key = Math.floor(Math.random() * 10000);
 
 
@@ -38,63 +38,48 @@ const registerUser = async (req, res) => {
   const mailOptions = {
     from: smtpUser, // sender address
     to: email, // list of recipients
-    subject: "BookMyFlight OTP", // subject line
-    // text: "Hello, this is a test email sent from Nodemailer!", // plain text body
-    // Alternatively, you can send HTML body
-    html: `<html>
+    subject: "BookinHub - Verify your account", // subject line
+    html: `<!DOCTYPE html>
+    <html>
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verification</title>
         <style>
-            body {{
-                font-family: Arial, sans-serif;
-                color: #333;
-                background-color: #f4f4f4;
-                padding: 20px;
-            }}
-            .container {{
-                background-color: #ffffff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                max-width: 600px;
-                margin: 0 auto;
-            }}
-            h2 {{
-                color: #4CAF50;
-            }}
-            .otp-code {{
-                font-size: 24px;
-                font-weight: bold;
-                color: #333;
-                padding: 10px;
-                background-color: #f1f1f1;
-                border: 1px solid #ddd;
-                text-align: center;
-                border-radius: 5px;
-                margin: 20px 0;
-            }}
-            .footer {{
-                font-size: 12px;
-                color: #888;
-                text-align: center;
-                margin-top: 30px;
-            }}
-            .footer a {{
-                color: #4CAF50;
-                text-decoration: none;
-            }}
+            body { margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            .email-container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%); padding: 32px 20px; text-align: center; }
+            .logo-text { color: white; font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .content { padding: 40px 30px; color: #374151; }
+            .greeting { font-size: 20px; font-weight: 600; margin-bottom: 24px; color: #111827; }
+            .message { font-size: 16px; line-height: 1.6; margin-bottom: 32px; color: #4b5563; }
+            .otp-container { background-color: #fff1f2; border: 2px dashed #f43f5e; border-radius: 12px; padding: 24px; text-align: center; margin: 32px 0; }
+            .otp-label { display: block; font-size: 14px; font-weight: 600; color: #9f1239; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+            .otp-code { font-size: 42px; font-weight: 800; color: #be123c; letter-spacing: 8px; font-family: 'Courier New', monospace; line-height: 1; }
+            .expiry-text { font-size: 14px; color: #6b7280; text-align: center; margin-top: 24px; }
+            .footer { background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb; }
+            .footer-text { font-size: 12px; color: #9ca3af; margin-bottom: 8px; }
         </style>
     </head>
     <body>
-        <div class="container">
-            <h2>Welcome to BookinHub!</h2>
-            <p>Thank you for registering with us! To complete your account creation process, please verify your email address by entering the One-Time Password (OTP) below:</p>
-            <div class="otp-code">${otp}</div>
-            <p>The OTP is valid for the next 10 minutes. Please enter it in the required field to complete your registration.</p>
-            <p>If you did not request this, please disregard this email.</p>
+        <div class="email-container">
+            <div class="header">
+                <h1 class="logo-text">BookinHub</h1>
+            </div>
+            <div class="content">
+                <p class="greeting">Hello,</p>
+                <p class="message">Thank you for registering with BookinHub. To complete your account creation, please verify your email address using the code below.</p>
+                
+                <div class="otp-container">
+                    <span class="otp-label">Your Verification Code</span>
+                    <div class="otp-code">${otp}</div>
+                </div>
+                
+                <p class="expiry-text">This code is valid for 10 minutes. If you didn't create an account, you can safely ignore this email.</p>
+            </div>
             <div class="footer">
-                <p>For any issues, feel free to contact our <a href="mailto:support@bookinhub.com">support team</a>.</p>
-                <p>Thank you for choosing us!</p>
-                <p>Best regards, <br> The BookinHub Team</p>
+                <p class="footer-text">© ${new Date().getFullYear()} BookinHub. All rights reserved.</p>
+                <p class="footer-text">Need help? <a href="mailto:support@bookinhub.com" style="color: #ef4444; text-decoration: none;">Contact Support</a></p>
             </div>
         </div>
     </body>
@@ -162,7 +147,7 @@ const loginUser = async (req, res) => {
   const smtpPass = process.env.SMTP_PASSWORD;
   const { email, password } = req.body;
   const user = await User.findOne({ email });
-  const otp = Math.floor(Math.random() * 10000);
+  const otp = Math.floor(1000 + Math.random() * 9000);
 
   if (!user) {
     return res.status(404).json(new ApiResponse(404, null, "User not found"));
@@ -197,67 +182,52 @@ const loginUser = async (req, res) => {
     const mailOptions = {
       from: smtpUser, // sender address
       to: email, // list of recipients
-      subject: "BookMyFlight OTP", // subject line
-      // text: "Hello, this is a test email sent from Nodemailer!", // plain text body
-      // Alternatively, you can send HTML body
-      html: `<html>
-    <head>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                color: #333;
-                background-color: #f4f4f4;
-                padding: 20px;
-            }}
-            .container {{
-                background-color: #ffffff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                max-width: 600px;
-                margin: 0 auto;
-            }}
-            h2 {{
-                color: #4CAF50;
-            }}
-            .otp-code {{
-                font-size: 24px;
-                font-weight: bold;
-                color: #333;
-                padding: 10px;
-                background-color: #f1f1f1;
-                border: 1px solid #ddd;
-                text-align: center;
-                border-radius: 5px;
-                margin: 20px 0;
-            }}
-            .footer {{
-                font-size: 12px;
-                color: #888;
-                text-align: center;
-                margin-top: 30px;
-            }}
-            .footer a {{
-                color: #4CAF50;
-                text-decoration: none;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>Welcome to BookinHub!</h2>
-            <p>Thank you for registering with us! To complete your account creation process, please verify your email address by entering the One-Time Password (OTP) below:</p>
-            <div class="otp-code">${otp}</div>
-            <p>The OTP is valid for the next 10 minutes. Please enter it in the required field to complete your registration.</p>
-            <p>If you did not request this, please disregard this email.</p>
-            <div class="footer">
-                <p>For any issues, feel free to contact our <a href="mailto:support@bookinhub.com">support team</a>.</p>
-                <p>Thank you for choosing us!</p>
-                <p>Best regards, <br> The BookinHub Team</p>
+      subject: "BookinHub - Login Verification", // subject line
+      html: `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Login Verification</title>
+            <style>
+                body { margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                .email-container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden; }
+                .header { background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%); padding: 32px 20px; text-align: center; }
+                .logo-text { color: white; font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .content { padding: 40px 30px; color: #374151; }
+                .greeting { font-size: 20px; font-weight: 600; margin-bottom: 24px; color: #111827; }
+                .message { font-size: 16px; line-height: 1.6; margin-bottom: 32px; color: #4b5563; }
+                .otp-container { background-color: #fff1f2; border: 2px dashed #f43f5e; border-radius: 12px; padding: 24px; text-align: center; margin: 32px 0; }
+                .otp-label { display: block; font-size: 14px; font-weight: 600; color: #9f1239; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+                .otp-code { font-size: 42px; font-weight: 800; color: #be123c; letter-spacing: 8px; font-family: 'Courier New', monospace; line-height: 1; }
+                .expiry-text { font-size: 14px; color: #6b7280; text-align: center; margin-top: 24px; }
+                .footer { background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb; }
+                .footer-text { font-size: 12px; color: #9ca3af; margin-bottom: 8px; }
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="header">
+                    <h1 class="logo-text">BookinHub</h1>
+                </div>
+                <div class="content">
+                    <p class="greeting">Hello,</p>
+                    <p class="message">We detected a login attempt for your BookinHub account. Please use the verification code below to proceed.</p>
+                    
+                    <div class="otp-container">
+                        <span class="otp-label">Verification Code</span>
+                        <div class="otp-code">${otp}</div>
+                    </div>
+                    
+                    <p class="expiry-text">This code expires in 10 minutes. If you did not attempt to sign in, please secure your account immediately.</p>
+                </div>
+                <div class="footer">
+                    <p class="footer-text">© ${new Date().getFullYear()} BookinHub. All rights reserved.</p>
+                    <p class="footer-text">Need help? <a href="mailto:support@bookinhub.com" style="color: #ef4444; text-decoration: none;">Contact Support</a></p>
+                </div>
             </div>
-        </div>
-    </body>
-    </html>`,
+        </body>
+        </html>`,
     };
 
     // Send email

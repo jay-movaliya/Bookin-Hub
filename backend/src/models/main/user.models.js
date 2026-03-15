@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    
+
     gender: {
         type: String,
         required: true
@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ["customer", "admin", "hotelOwner", "cabOwner", "flightOwner"],
+        enum: ["customer", "admin", "hotelOwner", "cabOwner"],
         default: "customer"
     },
 

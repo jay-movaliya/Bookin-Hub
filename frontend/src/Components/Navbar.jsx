@@ -9,7 +9,6 @@ import {
   PhoneCall,
   CalendarCheck,
   Car,
-  Plane,
   User,
   LogIn,
   UserPlus,
@@ -45,7 +44,8 @@ const Navbar = () => {
       // Check if user is admin
       try {
         const decoded = jwtDecode(token || usertoken);
-        setIsAdmin(decoded.user.type === 'admin'); // Assuming your JWT has a 'role' field
+        setIsAdmin(decoded.user?.type === 'admin');
+        // Assuming your JWT has a 'role' field
       } catch (error) {
         console.error("Error decoding token:", error);
       }
@@ -123,12 +123,6 @@ const Navbar = () => {
             >
               <Car size={16} /> <span>Cab</span>
             </Link>
-            <Link
-              to="/booking/flight"
-              className="flex items-center space-x-2 px-4 py-2 hover:bg-red-500 transition-all duration-300"
-            >
-              <Plane size={16} /> <span>Flight</span>
-            </Link>
           </div>
         </div>
 
@@ -179,7 +173,7 @@ const Navbar = () => {
         )}
 
         {/* User Dashboard Link */}
-        {isLoggedIn && !isRider && !isAdmin && (
+        {isLoggedIn && !isRider && (
           <Link
             to="/userdashboard"
             className="flex items-center space-x-2 p-3 hover:text-red-500 transition-all duration-300"
