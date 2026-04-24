@@ -4,10 +4,11 @@ import SuperSideBar from "./SuperSideBar";
 
 function SuperLayout() {
   return (
-    <div className="flex h-screen bg-black font-poppins">
+    <div className="flex h-screen bg-slate-50 font-poppins text-slate-800">
       <SuperSideBar />
-      <main className="flex-1 p-6 bg-black text-white overflow-y-auto transition-all duration-300">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-8 overflow-y-auto transition-all duration-300 relative">
+        <div className="absolute top-0 left-0 w-full h-64 bg-slate-100/50 pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
           <Outlet />
         </div>
       </main>

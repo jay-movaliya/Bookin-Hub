@@ -17,6 +17,7 @@ const HotelDetailsPage = () => {
   const navigate = useNavigate();
   const [hotel, setHotel] = useState(null);
   const [rooms, setRooms] = useState([]);
+  const [upiId, setUpiId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [imageLoading, setImageLoading] = useState({});
   const [activeTab, setActiveTab] = useState('overview');
@@ -435,14 +436,56 @@ const HotelDetailsPage = () => {
 
       // Razorpay options
       const options = {
-        key: "rzp_test_v9MqYHIkxBNToL", // Replace with your Razorpay Key ID
+        key: "rzp_test_v9MqYHIkxBNToL",
         amount: orderResponse.data.order.amount,
         currency: "INR",
         order_id: orderResponse.data.order.id,
+
         name: "Booking Hub",
         description: `Booking for ${hotel.name} - ${selectedRoom.room_type}`,
-        prefill: userDetails,
-        theme: { color: "#3399cc" },
+
+        prefill: {
+          name: userDetails.name,
+          email: userDetails.email,
+          contact: userDetails.contact,
+        },
+
+        // ✅ ENABLE ALL METHODS
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true
+        },
+
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Pay via UPI",
+                instruments: [
+                  { method: "upi" }
+                ]
+              },
+              card: {
+                name: "Pay via Card",
+                instruments: [{ method: "card" }]
+              },
+              netbanking: {
+                name: "Net Banking",
+                instruments: [{ method: "netbanking" }]
+              }
+            },
+            sequence: ["block.upi", "block.card", "block.netbanking"],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        },
+
+        theme: {
+          color: "#3399cc"
+        },
         handler: async (response) => {
           try {
             const verificationResponse = await axios.post(

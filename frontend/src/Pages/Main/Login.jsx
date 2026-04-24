@@ -105,7 +105,12 @@ const Login = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-gray-700 font-medium text-sm ml-1">Password</label>
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-gray-700 font-medium text-sm">Password</label>
+              <span onClick={() => navigate('/forgot-password')} className="text-red-500 text-xs font-semibold cursor-pointer hover:underline">
+                Forgot Password?
+              </span>
+            </div>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock size={20} className="text-gray-400 group-focus-within:text-red-500 transition-colors" />

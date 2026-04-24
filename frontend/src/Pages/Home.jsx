@@ -44,8 +44,8 @@ const Home = () => {
       </div>
 
       <div className="relative h-[90vh] flex items-center justify-center text-center px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555057918-9aadd809fb71?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center bg-fixed opacity-20"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-[#fafafa]"></div>
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center bg-fixed"></div>
+        <div className="absolute "></div>
 
         <motion.div
           className="relative z-10 max-w-4xl mx-auto"
@@ -57,13 +57,13 @@ const Home = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-block px-4 py-1.5 mb-6 rounded-full bg-red-50 border border-red-100 text-red-600 text-sm font-bold tracking-wide uppercase"
+            className="inline-block px-4 py-1.5 mb-6 rounded-full bg-red-50 border border-red-100 text-red-800 text-sm font-bold tracking-wide uppercase"
           >
             Adventure Awaits
           </motion.div>
 
           <motion.h1
-            className="text-5xl sm:text-7xl font-extrabold text-slate-900 leading-[1.1] tracking-tight mb-8"
+            className="text-5xl sm:text-7xl font-extrabold text-white leading-[1.1] tracking-tight mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -72,7 +72,7 @@ const Home = () => {
           </motion.h1>
 
           <motion.p
-            className="text-lg sm:text-xl text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto mb-10"
+            className="text-lg sm:text-xl text-white font-medium leading-relaxed max-w-2xl mx-auto mb-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}

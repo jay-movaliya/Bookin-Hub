@@ -20,6 +20,9 @@ import HotelDetails from "./Pages/Hotel/HotelDetails.jsx";
 import HotelReviewPage from "./Pages/Hotel/HotelReviews.jsx";
 import Register from "./Pages/Main/Register.jsx";
 import Login from "./Pages/Main/Login.jsx";
+import UserDashboard from "./Pages/Main/UserDashboard.jsx";
+import MainForgotPassword from "./Pages/Main/ForgetPassword.jsx";
+
 
 import OtpPage from "./Pages/Main/Otp.jsx";
 import OtpVerified from "./Pages/Cab/Rider/RiderOtpVerified.jsx";
@@ -36,7 +39,6 @@ import CabDetails from "./Pages/Cab/CabDetails.jsx";
 import CabReviewPage from "./Pages/Cab/CabReview.jsx";
 import BookingSuccess from "./Pages/Cab/BookingSuccess.jsx";
 import AddingCab from "./Pages/Cab/AddingCab.jsx";
-import UserDashboard from "./Pages/Cab/UserDashboard.jsx";
 import RiderDashboard from "./Pages/Cab/Rider/RiderDashbord.jsx";
 import Riderlogin from "./Pages/Cab/Rider/Riderlogin.jsx";
 import ConfirmBooking from "./Pages/Cab/ConfrimBooking";
@@ -132,6 +134,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<MainForgotPassword />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/otp/:email" element={<OtpPage />} />

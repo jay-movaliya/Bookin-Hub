@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import axios from "axios";
-import { FaHotel, FaUser, FaEnvelope, FaLock, FaBuilding, FaClipboardList } from "react-icons/fa";
+import { User, Mail, Lock, Building, ClipboardList, Hotel } from "lucide-react";
 
 const HotelOwnerRegister = () => {
   const navigate = useNavigate();
@@ -44,132 +45,147 @@ const HotelOwnerRegister = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden font-[Poppins] p-6 py-12">
-      {/* Background Decorations */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-red-100/50 rounded-full blur-[120px] mix-blend-multiply animate-pulse"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-100/50 rounded-full blur-[120px] mix-blend-multiply animate-pulse delay-700"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100 font-[Poppins] p-4 relative overflow-hidden py-10">
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-32 left-20 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
 
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] w-full max-w-2xl border border-slate-100 relative z-10 transition-all duration-300">
-
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-sm border border-red-100 group">
-            <FaHotel className="text-4xl group-hover:scale-110 transition-transform duration-300" />
-          </div>
-
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-            Partner with <span className="text-red-500">Us</span>
-          </h2>
-          <p className="text-slate-500 font-medium">Register your hotel & manage bookings effortlessly.</p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="relative bg-white/70 backdrop-blur-xl border border-white/50 p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-2xl"
+      >
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-2">
+            Partner with Us
+          </h1>
+          <p className="text-gray-500 text-sm">Register your hotel & manage bookings effortlessly.</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 text-sm font-semibold p-4 rounded-xl mb-6 text-center border border-red-100">
+          <div className="bg-red-50 text-red-500 text-sm font-medium py-2 rounded-lg mb-6 text-center">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Full Name */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Full Name</label>
+            <label className="text-gray-700 font-medium text-sm ml-1">Full Name</label>
             <div className="relative group">
-              <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User size={20} className="text-gray-400 group-focus-within:text-red-500 transition-colors" />
+              </div>
               <input
                 type="text"
                 name="name"
                 placeholder="Enter Full Name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 text-slate-900 placeholder-slate-400 outline-none transition-all font-medium"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all placeholder-gray-400"
               />
             </div>
           </div>
 
           {/* Email */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
+            <label className="text-gray-700 font-medium text-sm ml-1">Email Address</label>
             <div className="relative group">
-              <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail size={20} className="text-gray-400 group-focus-within:text-red-500 transition-colors" />
+              </div>
               <input
                 type="email"
                 name="email"
-                placeholder="Enter Email"
+                placeholder="name@example.com"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 text-slate-900 placeholder-slate-400 outline-none transition-all font-medium"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all placeholder-gray-400"
               />
             </div>
           </div>
 
           {/* Password */}
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Password</label>
+            <label className="text-gray-700 font-medium text-sm ml-1">Password</label>
             <div className="relative group">
-              <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={20} className="text-gray-400 group-focus-within:text-red-500 transition-colors" />
+              </div>
               <input
                 type="password"
                 name="password"
                 placeholder="Create a strong password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 text-slate-900 placeholder-slate-400 outline-none transition-all font-medium"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all placeholder-gray-400"
               />
             </div>
           </div>
 
           {/* Business Name */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Business Name</label>
+            <label className="text-gray-700 font-medium text-sm ml-1">Business Name</label>
             <div className="relative group">
-              <FaBuilding className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Building size={20} className="text-gray-400 group-focus-within:text-red-500 transition-colors" />
+              </div>
               <input
                 type="text"
                 name="businessName"
                 placeholder="Enter Business Name"
                 value={formData.businessName}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 text-slate-900 placeholder-slate-400 outline-none transition-all font-medium"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all placeholder-gray-400"
               />
             </div>
           </div>
 
           {/* Business Registration Number */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Business Reg. No.</label>
+            <label className="text-gray-700 font-medium text-sm ml-1">Business Reg. No.</label>
             <div className="relative group">
-              <FaClipboardList className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <ClipboardList size={20} className="text-gray-400 group-focus-within:text-red-500 transition-colors" />
+              </div>
               <input
                 type="text"
                 name="businessRegNo"
                 placeholder="Registration No."
                 value={formData.businessRegNo}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 text-slate-900 placeholder-slate-400 outline-none transition-all font-medium"
+                className="w-full bg-gray-50/50 text-gray-900 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all placeholder-gray-400"
               />
             </div>
           </div>
+
+          <div className="md:col-span-2 mt-4">
+            <button
+              type="submit"
+              disabled={!formData.name || !formData.email || !formData.password || !formData.businessName || !formData.businessRegNo}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:shadow-red-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              <Hotel size={20} />
+              <span>Complete Registration</span>
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm">
+            Already have an account?{' '}
+            <span
+              onClick={() => navigate('/login/hotel')}
+              className="text-red-500 font-semibold cursor-pointer hover:underline"
+            >
+              Login here
+            </span>
+          </p>
         </div>
-
-        {/* Register Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 text-lg rounded-xl flex items-center justify-center gap-3 mt-8 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
-        >
-          <FaHotel /> <span>Complete Registration</span>
-        </button>
-
-        <p className="text-center text-slate-400 font-mediuJay$7016$m text-sm mt-6">
-          Already have an account?{" "}
-          <a
-            href="http://localhost:5173/login/hotel"
-            className="text-red-500 hover:text-red-600 font-bold hover:underline transition-all"
-          >
-            Login here
-          </a>
-        </p>
-      </div>
+      </motion.div>
     </div>
   );
 };

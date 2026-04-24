@@ -1,13 +1,12 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-cover bg-center flex items-center justify-center relative" 
-         style={{ backgroundImage: "url('https://cdn.vectorstock.com/i/1000v/79/88/taxi-car-front-view-in-dark-background-vector-43697988.avif')" }}>
-      
+    <div className="h-screen w-full overflow-hidden bg-cover bg-center flex items-center justify-center relative"
+      style={{ backgroundImage: "url('https://cdn.vectorstock.com/i/1000v/79/88/taxi-car-front-view-in-dark-background-vector-43697988.avif')" }}>
+
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
@@ -29,7 +28,7 @@ const ForgotPassword = () => {
                        peer focus:outline-none focus:border-red-400 transition-colors"
               placeholder="Email"
             />
-            <label 
+            <label
               htmlFor="email"
               className="absolute left-4 -top-2.5 px-1 text-white/80 text-sm transition-all
                          peer-placeholder-shown:text-base peer-placeholder-shown:top-3.5
@@ -52,7 +51,7 @@ const ForgotPassword = () => {
 
         {/* Back to Login */}
         <div className="mt-6 flex justify-center text-sm">
-          <button 
+          <button
             onClick={() => navigate("/riderlogin")}
             className="text-white/70 hover:text-red-300 transition-colors"
           >

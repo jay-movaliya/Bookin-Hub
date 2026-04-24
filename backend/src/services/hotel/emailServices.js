@@ -43,7 +43,8 @@ export const sendRatingEmail = async ({ email, userName, bookingId, hotelName })
 };
 
 export const sendBookingConfirmation = async ({ email, userName, bookingId, hotelName, checkInDate, checkOutDate, totalAmount }) => {
-  const bookingDetailsLink = `${process.env.FRONTEND_URL}/bookings/${bookingId}`;
+  // const bookingDetailsLink = `${process.env.FRONTEND_URL}/bookings/${bookingId}`;
+  const bookingDetailsLink = `${process.env.FRONTEND_URL}/userdashboard`;
 
   const mailOptions = {
     from: '"Bookinhub"',

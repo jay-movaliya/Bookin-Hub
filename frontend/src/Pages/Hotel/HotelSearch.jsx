@@ -126,7 +126,10 @@ const HotelSearchPage = () => {
   };
 
   const getImageUrl = (imagePath) => {
+    console.log("original path : ", imagePath)
     const cleanedPath = imagePath.replace(/^public[\\/]/, '');
+    console.log("cleanedpath : ", cleanedPath)
+    console.log("final url : ", `${import.meta.env.VITE_API_URL}/${cleanedPath.replace(/\\/g, '/')}`)
     return `${import.meta.env.VITE_API_URL}/${cleanedPath.replace(/\\/g, '/')}`;
   };
 
