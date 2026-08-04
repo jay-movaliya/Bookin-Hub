@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiMapPin, FiStar, FiFilter } from 'react-icons/fi';
+import { FiSearch, FiMapPin, FiStar, FiFilter, FiWifi, FiCoffee, FiTv, FiWind, FiCheckCircle } from 'react-icons/fi';
+import { MdOutlinePool, MdOutlineLocalParking, MdOutlineRestaurant, MdOutlineFitnessCenter, MdOutlineSpa } from 'react-icons/md';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
@@ -19,6 +20,21 @@ const HotelSearchPage = () => {
   const [imageLoading, setImageLoading] = useState({});
   const [showFilters, setShowFilters] = useState(false); // Filters hidden by default
   const navigate = useNavigate();
+
+  const getAmenityIcon = (name) => {
+    if (!name) return <FiCheckCircle className="text-blue-500 shrink-0 text-xs" />;
+    const lower = name.toLowerCase();
+    if (lower.includes("wifi") || lower.includes("internet")) return <FiWifi className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("pool") || lower.includes("swim")) return <MdOutlinePool className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("parking") || lower.includes("garage") || lower.includes("car")) return <MdOutlineLocalParking className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("food") || lower.includes("restaurant") || lower.includes("dine") || lower.includes("dining")) return <MdOutlineRestaurant className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("coffee") || lower.includes("tea") || lower.includes("breakfast")) return <FiCoffee className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("gym") || lower.includes("fitness") || lower.includes("workout")) return <MdOutlineFitnessCenter className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("ac") || lower.includes("air") || lower.includes("cool")) return <FiWind className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("tv") || lower.includes("television")) return <FiTv className="text-blue-500 shrink-0 text-xs" />;
+    if (lower.includes("spa") || lower.includes("massage") || lower.includes("wellness")) return <MdOutlineSpa className="text-blue-500 shrink-0 text-xs" />;
+    return <FiCheckCircle className="text-blue-500 shrink-0 text-xs" />;
+  };
 
   const checkAuthOnPageLoad = (navigate, redirectPath = null) => {
     const token = localStorage.getItem('token');
@@ -262,18 +278,6 @@ const HotelSearchPage = () => {
                 </button>
               </div>
             </div>
-
-            {/* Quick Search Button (shown when filters are hidden) */}
-            <div className={`${!showFilters ? 'block' : 'hidden'}`}>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 text-lg"
-              >
-                <FiSearch className="text-xl" />
-                {isLoading ? 'Searching...' : 'Search with Current Filters'}
-              </button>
-            </div>
           </form>
         </div>
 
@@ -355,6 +359,11 @@ const HotelSearchPage = () => {
                             </div>
                           ))}
                         </Slider>
+                        {hotel.status === "maintenance" && (
+                          <div className="absolute top-4 left-4 bg-amber-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center shadow-lg z-10 uppercase tracking-wider">
+                            Under Maintenance
+                          </div>
+                        )}
                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full flex items-center shadow-lg">
                           <FiStar className="text-yellow-500 mr-1 fill-yellow-500" />
                           <span>{hotel.averageRating ? hotel.averageRating.toFixed(1) : 'New'}</span>
@@ -381,6 +390,22 @@ const HotelSearchPage = () => {
                           {hotel.address?.area}, {hotel.address?.district}
                         </span>
                       </div>
+
+                      {hotel.amenities?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {hotel.amenities.slice(0, 3).map((amenity, idx) => (
+                            <span key={idx} className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                              {getAmenityIcon(amenity)}
+                              <span>{amenity}</span>
+                            </span>
+                          ))}
+                          {hotel.amenities.length > 3 && (
+                            <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
+                              +{hotel.amenities.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-auto">
@@ -391,20 +416,31 @@ const HotelSearchPage = () => {
                             ₹{hotel.minPrice || '0'} <span className="text-gray-400 text-sm font-normal">-</span> ₹{hotel.maxPrice || '0'}
                           </p>
                         </div>
-                        <div className="flex items-center bg-green-50 px-3 py-1 rounded-lg border border-green-100">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                          <span className="text-green-700 text-xs font-bold uppercase tracking-wider">Available</span>
-                        </div>
+                        {hotel.status === "maintenance" ? (
+                          <div className="flex items-center bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">
+                            <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+                            <span className="text-amber-800 text-xs font-bold uppercase tracking-wider">Maintenance</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center bg-green-50 px-3 py-1 rounded-lg border border-green-100">
+                            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                            <span className="text-green-700 text-xs font-bold uppercase tracking-wider">Available</span>
+                          </div>
+                        )}
                       </div>
 
                       <button
-                        className="w-full py-3.5 bg-gray-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-gray-900/10 group-hover:shadow-gray-900/20 active:scale-[0.98]"
+                        className={`w-full py-3.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] ${
+                          hotel.status === "maintenance"
+                            ? "bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200"
+                            : "bg-gray-900 hover:bg-black text-white shadow-gray-900/10 group-hover:shadow-gray-900/20"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleHotelClick(hotel._id);
                         }}
                       >
-                        View Details & Book
+                        {hotel.status === "maintenance" ? "View Hotel (Maintenance)" : "View Details & Book"}
                       </button>
                     </div>
                   </div>

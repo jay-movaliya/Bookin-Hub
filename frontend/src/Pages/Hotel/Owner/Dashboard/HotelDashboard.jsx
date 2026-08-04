@@ -17,7 +17,18 @@ import {
   ChevronRight,
   X,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  UploadCloud,
+  Wifi,
+  Coffee,
+  Tv,
+  Utensils,
+  Car,
+  Dumbbell,
+  Wind,
+  CheckCircle2,
+  Waves
 } from "lucide-react";
 import Swal from "sweetalert2";
 
@@ -31,8 +42,11 @@ function HotelManagement() {
     _id: null,
     name: "",
     description: "",
+    status: "available",
     images: [],
     hotelImages: [],
+    amenities: [],
+    currentAmenity: "",
     area: "",
     district: "",
     pincode: "",
@@ -62,6 +76,21 @@ function HotelManagement() {
       return locString ? `${locString} - ${pincode}` : `${pincode}`;
     }
     return locString || "Location not specified";
+  };
+
+  const getAmenityIcon = (name) => {
+    if (!name) return <Sparkles size={11} className="shrink-0 text-blue-500" />;
+    const lower = name.toLowerCase();
+    if (lower.includes("wifi") || lower.includes("internet")) return <Wifi size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("pool") || lower.includes("swim")) return <Waves size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("parking") || lower.includes("garage") || lower.includes("car")) return <Car size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("food") || lower.includes("restaurant") || lower.includes("dine") || lower.includes("dining")) return <Utensils size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("coffee") || lower.includes("tea") || lower.includes("breakfast")) return <Coffee size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("gym") || lower.includes("fitness") || lower.includes("workout")) return <Dumbbell size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("ac") || lower.includes("air") || lower.includes("cool")) return <Wind size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("tv") || lower.includes("television")) return <Tv size={11} className="shrink-0 text-blue-500" />;
+    if (lower.includes("spa") || lower.includes("massage") || lower.includes("wellness")) return <Sparkles size={11} className="shrink-0 text-blue-500" />;
+    return <CheckCircle2 size={11} className="shrink-0 text-blue-500" />;
   };
 
   const truncateDescription = (text, length = 70) => {
@@ -144,11 +173,39 @@ function HotelManagement() {
     });
   };
 
+  const handleRemoveExistingHotelImage = (imagePath) => {
+    setCurrentHotel(prev => ({
+      ...prev,
+      hotelImages: (prev.hotelImages || []).filter(img => img !== imagePath)
+    }));
+  };
+
+  const handleAddAmenity = () => {
+    if (currentHotel.currentAmenity?.trim()) {
+      setCurrentHotel(prev => ({
+        ...prev,
+        amenities: [...(prev.amenities || []), prev.currentAmenity.trim()],
+        currentAmenity: ""
+      }));
+    }
+  };
+
+  const handleRemoveAmenity = (index) => {
+    setCurrentHotel(prev => {
+      const newAmenities = [...(prev.amenities || [])];
+      newAmenities.splice(index, 1);
+      return { ...prev, amenities: newAmenities };
+    });
+  };
+
   const handleEditClick = (hotel) => {
     setCurrentHotel({
       _id: hotel._id,
       name: hotel.name || "",
       description: hotel.description || "",
+      status: hotel.status || "available",
+      amenities: hotel.amenities || [],
+      currentAmenity: "",
       area: hotel.address?.area || hotel.area || "",
       district: hotel.address?.district || hotel.district || "",
       pincode: hotel.address?.pincode || hotel.pincode || "",
@@ -165,11 +222,16 @@ function HotelManagement() {
       const formData = new FormData();
       formData.append('name', currentHotel.name);
       formData.append('description', currentHotel.description);
+      formData.append('status', currentHotel.status || 'available');
       formData.append('area', currentHotel.area);
       formData.append('district', currentHotel.district);
       formData.append('pincode', currentHotel.pincode);
       formData.append('longitude', currentHotel.longitude || "0");
       formData.append('latitude', currentHotel.latitude || "0");
+
+      currentHotel.amenities?.forEach((amenity, index) => {
+        formData.append(`amenities[${index}]`, amenity);
+      });
 
       if (showModal === "update" || showModal === "update-images") {
         formData.append('id', currentHotel._id);
@@ -246,6 +308,38 @@ function HotelManagement() {
         icon: "success",
         title: "Deleted!",
         text: "Hotel has been deleted successfully.",
+        confirmButtonColor: "#b90538",
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: err.message,
+        confirmButtonColor: "#b90538",
+      });
+    }
+  };
+
+  const handleToggleHotelStatus = async (hotel) => {
+    const newStatus = hotel.status === "maintenance" ? "available" : "maintenance";
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/update-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id: hotel._id, status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update status");
+      }
+
+      fetchHotels();
+      Swal.fire({
+        icon: "success",
+        title: "Status Updated!",
+        text: `Hotel status changed to ${newStatus === "maintenance" ? "Under Maintenance" : "Available"}.`,
         confirmButtonColor: "#b90538",
       });
     } catch (err) {
@@ -438,6 +532,19 @@ function HotelManagement() {
                         alt={hotel.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
+                      {/* Status Badge Overlay */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border shadow-md backdrop-blur-md ${
+                          hotel.status === 'blocked'
+                            ? 'bg-rose-600 text-white border-rose-700'
+                            : hotel.status === 'maintenance'
+                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                            : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                        }`}>
+                          {hotel.status === 'blocked' ? 'Blocked by Admin' : hotel.status === 'maintenance' ? 'Under Maintenance' : 'Active'}
+                        </span>
+                      </div>
+
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                       <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end text-white">
                         <span className="text-xs font-extrabold px-3 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/20">
@@ -459,10 +566,17 @@ function HotelManagement() {
                         <h4 className="font-extrabold text-base text-[#131b2e] leading-snug">
                           {hotel.name}
                         </h4>
-                        <span className="flex items-center text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100 shrink-0 ml-2">
-                          <ShieldCheck size={12} className="mr-1" />
-                          Verified
-                        </span>
+                        {hotel.isApproved ? (
+                          <span className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shrink-0 ml-2">
+                            <ShieldCheck size={12} className="mr-1 text-emerald-600" />
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 shrink-0 ml-2">
+                            <Clock size={12} className="mr-1 text-amber-600" />
+                            Pending Approval
+                          </span>
+                        )}
                       </div>
 
                       {/* Fixed Location Display - No orphaned hyphens or commas */}
@@ -471,9 +585,22 @@ function HotelManagement() {
                         <span>{formatLocation(hotel)}</span>
                       </p>
 
-                      <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                        {truncateDescription(hotel.description)}
-                      </p>
+                      {/* Hotel Amenities Chips */}
+                      {hotel.amenities?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {hotel.amenities.slice(0, 3).map((amenity, idx) => (
+                            <span key={idx} className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                              {getAmenityIcon(amenity)}
+                              <span>{amenity}</span>
+                            </span>
+                          ))}
+                          {hotel.amenities.length > 3 && (
+                            <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200">
+                              +{hotel.amenities.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -668,42 +795,62 @@ function HotelManagement() {
 
       {/* Add / Edit Hotel Modal */}
       {(showModal === "add" || showModal === "update") && (
-        <div className="fixed inset-0 flex justify-center items-center bg-black/60 backdrop-blur-sm z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 flex justify-center items-center bg-slate-900/60 backdrop-blur-md z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 md:p-8 space-y-6 max-h-[92vh] overflow-y-auto border border-slate-100">
             
-            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+            <div className="bg-slate-900 text-white -mx-6 -mt-6 md:-mx-8 md:-mt-8 p-6 md:p-8 rounded-t-3xl border-b border-slate-800 flex justify-between items-center">
               <div>
-                <h3 className="text-xl font-bold text-[#131b2e]">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2.5">
+                  <Building className="w-5 h-5 text-rose-500 shrink-0" />
                   {showModal === "add" ? "Add New Hotel" : "Update Hotel Details"}
                 </h3>
-                <p className="text-xs text-slate-400">Fill in property information below</p>
+                <p className="text-xs text-slate-400 mt-1 font-normal">
+                  Configure property information, operational status, and media
+                </p>
               </div>
               <button
                 onClick={() => setShowModal(null)}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2.5 cursor-pointer shrink-0"
               >
-                <X size={18} />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Hotel Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={currentHotel.name}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Royal Garden Inn"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#b90538]"
-                />
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+                    Hotel Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={currentHotel.name}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Royal Garden Inn"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+                    Property Status
+                  </label>
+                  <select
+                    name="status"
+                    value={currentHotel.status || "available"}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all cursor-pointer font-bold"
+                  >
+                    <option value="available">Available (Active)</option>
+                    <option value="maintenance">Under Maintenance</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Area / Street
                   </label>
                   <input
@@ -712,11 +859,11 @@ function HotelManagement() {
                     value={currentHotel.area}
                     onChange={handleInputChange}
                     placeholder="e.g. MG Road"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     District / City
                   </label>
                   <input
@@ -725,11 +872,11 @@ function HotelManagement() {
                     value={currentHotel.district}
                     onChange={handleInputChange}
                     placeholder="e.g. Bengaluru"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Pincode
                   </label>
                   <input
@@ -738,13 +885,49 @@ function HotelManagement() {
                     value={currentHotel.pincode}
                     onChange={handleInputChange}
                     placeholder="560001"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
                   />
                 </div>
               </div>
 
+              {/* Hotel Amenities Tag Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+                  Hotel Amenities & Services
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    name="currentAmenity"
+                    value={currentHotel.currentAmenity || ""}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Swimming Pool, Free WiFi, Restaurant, Parking, Gym"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddAmenity}
+                    className="px-4 py-2 bg-slate-900 text-white rounded-2xl text-xs font-bold hover:bg-black transition-colors shrink-0 cursor-pointer shadow-xs"
+                  >
+                    Add
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {currentHotel.amenities?.map((amenity, idx) => (
+                    <span key={idx} className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100 font-extrabold shadow-2xs">
+                      {getAmenityIcon(amenity)}
+                      {amenity}
+                      <button type="button" onClick={() => handleRemoveAmenity(idx)} className="hover:text-blue-900 transition-colors cursor-pointer">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                   Description
                 </label>
                 <textarea
@@ -753,53 +936,114 @@ function HotelManagement() {
                   value={currentHotel.description}
                   onChange={handleInputChange}
                   placeholder="Describe unique amenities, view, and features..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#b90538] resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all resize-none font-medium"
                 ></textarea>
               </div>
 
-              {/* Property Image Upload */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Property Images
+              {/* Property Image Upload Box */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                    Property Gallery Photos
+                  </label>
+                  <span className="text-[11px] font-bold text-slate-400">
+                    {(currentHotel.hotelImages?.length || 0) + (currentHotel.images?.length || 0)} Photos Selected
+                  </span>
+                </div>
+
+                <label className="border-2 border-dashed border-rose-200 hover:border-rose-400 bg-rose-50/20 hover:bg-rose-50/50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 group text-center shadow-2xs">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-[#b90538] flex items-center justify-center mb-2.5 group-hover:scale-110 transition-all duration-300 shadow-md shadow-rose-500/10 border border-rose-100">
+                    <UploadCloud size={24} />
+                  </div>
+                  <p className="text-xs font-bold text-slate-800">
+                    <span className="text-[#b90538] font-extrabold hover:underline">Click to browse photos</span> or drag & drop here
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    Upload high-quality PNG, JPG, or WEBP photos
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
                 </label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleImageChange}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700"
-                />
                 
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {currentHotel.images?.map((img, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
-                      <img src={img.preview} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5"
-                      >
-                        <X size={12} />
-                      </button>
+                <div className="space-y-4 pt-2">
+                  {currentHotel.hotelImages?.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Existing Property Photos ({currentHotel.hotelImages.length})
+                      </p>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                        {currentHotel.hotelImages.map((img, idx) => (
+                          <div key={idx} className="relative group aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">
+                            <img src={getImageUrl(img)} alt="Existing" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExistingHotelImage(img)}
+                                className="bg-rose-600 text-white rounded-full p-2 hover:bg-rose-700 transition-transform active:scale-95 shadow-md cursor-pointer"
+                                title="Delete existing photo"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                            {idx === 0 && (
+                              <span className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md">
+                                Cover
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  {currentHotel.images?.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-extrabold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        New Uploads ({currentHotel.images.length})
+                      </p>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                        {currentHotel.images.map((img, idx) => (
+                          <div key={idx} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-emerald-400 shadow-xs bg-emerald-50">
+                            <img src={img.preview} alt="New Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="bg-rose-600 text-white rounded-full p-2 hover:bg-rose-700 transition-transform active:scale-95 shadow-md cursor-pointer"
+                                title="Remove new photo"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <div className="pt-5 border-t border-slate-100 flex justify-end items-center gap-3">
               <button
                 type="button"
                 onClick={() => setShowModal(null)}
-                className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddOrUpdateHotel}
-                className="px-6 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-500/20"
+                className="px-7 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold rounded-xl text-xs shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
               >
-                {showModal === "add" ? "Save Hotel" : "Update Hotel"}
+                {showModal === "add" ? "Save Hotel" : "Update Hotel Details"}
               </button>
             </div>
 

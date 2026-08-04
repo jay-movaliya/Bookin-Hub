@@ -192,8 +192,8 @@ const UserDashboard = () => {
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-bold text-slate-400 uppercase">Dates</span>
             <span className="text-slate-800 font-bold text-[11px]">
-              {new Date(booking.bookingStartDate || Date.now()).toLocaleDateString()} -{" "}
-              {new Date(booking.bookingEndDate || Date.now() + 86400000).toLocaleDateString()}
+              {new Date(booking.bookingStartDate || Date.now()).toLocaleDateString("en-GB")} -{" "}
+              {new Date(booking.bookingEndDate || Date.now() + 86400000).toLocaleDateString("en-GB")}
             </span>
           </div>
           <div className="flex justify-between items-center pt-1.5 border-t border-slate-200/60">
@@ -496,13 +496,13 @@ const UserDashboard = () => {
                     <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">Check-In</p>
                       <p className="font-bold text-slate-800">
-                        {new Date(selectedHotelBooking.bookingStartDate || Date.now()).toLocaleDateString()}
+                        {new Date(selectedHotelBooking.bookingStartDate || Date.now()).toLocaleDateString("en-GB")}
                       </p>
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase">Check-Out</p>
                       <p className="font-bold text-slate-800">
-                        {new Date(selectedHotelBooking.bookingEndDate || Date.now() + 86400000).toLocaleDateString()}
+                        {new Date(selectedHotelBooking.bookingEndDate || Date.now() + 86400000).toLocaleDateString("en-GB")}
                       </p>
                     </div>
                   </div>

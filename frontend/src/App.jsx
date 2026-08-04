@@ -194,7 +194,9 @@ function App() {
           />
           <Route path="approved-hotel-owner" element={<SuperHotelAdmin defaultTab="approved" />} />
           <Route path="pending-hotel-owner" element={<SuperHotelAdmin defaultTab="unapproved" />} />
-          <Route path="hotel" element={<Navigate to="approved-hotel-owner" replace />} />
+          <Route path="approved-hotels" element={<SuperHotelAdmin defaultTab="approved-hotels" />} />
+          <Route path="pending-hotels" element={<SuperHotelAdmin defaultTab="pending-hotels" />} />
+          <Route path="hotel" element={<Navigate to="approved-hotels" replace />} />
         </Route>
       </Routes>
       {/* Show Footer only if not on admin routes */}

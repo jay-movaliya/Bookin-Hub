@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiMapPin, FiStar, FiArrowLeft, FiUser, FiCalendar, FiCheck, FiWifi,
-  FiTv, FiCoffee, FiWind, FiShield, FiPackage, FiTruck, FiClock, FiBriefcase
+  FiTv, FiCoffee, FiWind, FiShield, FiPackage, FiTruck, FiClock, FiBriefcase, FiAlertTriangle
 } from 'react-icons/fi';
 import {
   MdOutlinePool, MdOutlineRestaurant, MdOutlineLocalParking, MdOutlineFitnessCenter,
@@ -17,6 +17,8 @@ import Lottie from 'react-lottie';
 import successAnimation from './success-animation.json';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const HotelDetailsPage = () => {
   const { id } = useParams();
@@ -46,6 +48,8 @@ const HotelDetailsPage = () => {
     email: "",
     contact: "",
   });
+
+  const [roomBookings, setRoomBookings] = useState([]);
 
   // Lottie animation options
   const defaultOptions = {
@@ -106,6 +110,16 @@ const HotelDetailsPage = () => {
         const roomsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/room/${id}`);
         if (!roomsResponse.ok) throw new Error('Failed to fetch rooms');
         const roomsData = await roomsResponse.json();
+
+        try {
+          const bookingsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/booking/hotel-room-bookings/${id}`);
+          if (bookingsResponse.ok) {
+            const bookingsData = await bookingsResponse.json();
+            setRoomBookings(bookingsData.data || []);
+          }
+        } catch (bErr) {
+          console.error("Error fetching room bookings:", bErr);
+        }
 
         setHotel(hotelData.data);
         setRooms(roomsData.data);
@@ -180,6 +194,22 @@ const HotelDetailsPage = () => {
     setIsRoomAvailable(true);
   };
 
+  const formatDateToYYYYMMDD = (date) => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseYYYYMMDDToDate = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length < 3) return null;
+    const [year, month, day] = parts.map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setBookingData(prev => ({ ...prev, [name]: value }));
@@ -209,6 +239,80 @@ const HotelDetailsPage = () => {
     }
   };
 
+  const getRoomStatusInfo = (room) => {
+    const isHotelMaintenance = hotel && (hotel.status === "maintenance" || hotel.status === "under maintenance");
+    if (isHotelMaintenance) {
+      return {
+        status: "maintenance",
+        label: "Hotel Under Maintenance",
+        badgeClass: "bg-amber-100 text-amber-900 border-amber-300",
+        isBookable: false,
+        bookingText: null,
+        bookedRanges: [],
+      };
+    }
+
+    if (!room) {
+      return {
+        status: "available",
+        label: "Available",
+        badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300",
+        isBookable: true,
+        bookingText: null,
+        bookedRanges: [],
+      };
+    }
+
+    const roomStatus = (room.status || "").toLowerCase();
+    const isMaintenance = roomStatus === "maintenance" || roomStatus === "under maintenance";
+
+    if (isMaintenance) {
+      return {
+        status: "maintenance",
+        label: "Under Maintenance",
+        badgeClass: "bg-amber-100 text-amber-800 border-amber-300",
+        isBookable: false,
+        bookingText: null,
+        bookedRanges: [],
+      };
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const activeBookings = roomBookings.filter(b => {
+      const bRoomId = typeof b.room === 'object' ? b.room?._id : b.room;
+      if (bRoomId !== room._id) return false;
+      const bEnd = new Date(b.bookingEndDate);
+      return bEnd >= todayStart && b.bookingStatus?.toLowerCase() !== "cancelled";
+    });
+
+    if (activeBookings.length > 0) {
+      const sorted = [...activeBookings].sort((a, b) => new Date(a.bookingStartDate) - new Date(b.bookingStartDate));
+      const currentOrNext = sorted[0];
+      const startDateStr = new Date(currentOrNext.bookingStartDate).toLocaleDateString("en-GB");
+      const endDateStr = new Date(currentOrNext.bookingEndDate).toLocaleDateString("en-GB");
+
+      return {
+        status: "booked",
+        label: "Booked",
+        badgeClass: "bg-rose-100 text-rose-800 border-rose-300",
+        isBookable: true,
+        bookingText: `Booked from ${startDateStr} to ${endDateStr}`,
+        bookedRanges: sorted,
+      };
+    }
+
+    return {
+      status: "available",
+      label: "Available",
+      badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300",
+      isBookable: true,
+      bookingText: null,
+      bookedRanges: [],
+    };
+  };
+
   const validateStep1 = () => {
     if (!bookingData.startDate || !bookingData.endDate) {
       Swal.fire({
@@ -223,6 +327,7 @@ const HotelDetailsPage = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startDate = new Date(bookingData.startDate);
+    const endDate = new Date(bookingData.endDate);
 
     if (startDate < today) {
       Swal.fire({
@@ -234,7 +339,7 @@ const HotelDetailsPage = () => {
       return false;
     }
 
-    if (new Date(bookingData.endDate) <= new Date(bookingData.startDate)) {
+    if (endDate <= startDate) {
       Swal.fire({
         icon: 'error',
         title: 'Invalid Date',
@@ -242,6 +347,28 @@ const HotelDetailsPage = () => {
         confirmButtonColor: '#ef4444',
       });
       return false;
+    }
+
+    if (selectedRoom) {
+      const statusInfo = getRoomStatusInfo(selectedRoom);
+      for (let b of statusInfo.bookedRanges) {
+        const bStart = new Date(b.bookingStartDate).getTime();
+        const bEnd = new Date(b.bookingEndDate).getTime();
+        const selStart = startDate.getTime();
+        const selEnd = endDate.getTime();
+
+        if (selStart < bEnd && selEnd > bStart) {
+          const sDateStr = new Date(b.bookingStartDate).toLocaleDateString("en-GB");
+          const eDateStr = new Date(b.bookingEndDate).toLocaleDateString("en-GB");
+          Swal.fire({
+            icon: 'error',
+            title: 'Dates Overlap with Existing Booking',
+            text: `This room is already booked from ${sDateStr} to ${eDateStr}. Please select dates outside this range.`,
+            confirmButtonColor: '#ef4444',
+          });
+          return false;
+        }
+      }
     }
 
     return true;
@@ -578,6 +705,17 @@ const HotelDetailsPage = () => {
         {/* Main Layout Content */}
         <div className="space-y-10 pb-12">
 
+          {/* Hotel Under Maintenance Alert Banner */}
+          {hotel && (hotel.status === "maintenance" || hotel.status === "under maintenance") && (
+            <div className="bg-amber-50/90 border-2 border-amber-300 p-5 rounded-3xl flex items-center gap-4 text-amber-900 shadow-md backdrop-blur-md">
+              <FiAlertTriangle className="text-3xl text-amber-600 shrink-0" />
+              <div>
+                <h3 className="font-extrabold text-base">Hotel Under Maintenance</h3>
+                <p className="text-xs text-amber-800 font-semibold mt-0.5">This property is currently undergoing maintenance. Room bookings are temporarily unavailable.</p>
+              </div>
+            </div>
+          )}
+
           {/* About Property */}
           <section className="bg-white/70 backdrop-blur-2xl border border-white/50 p-8 rounded-3xl shadow-sm">
             <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">
@@ -591,11 +729,11 @@ const HotelDetailsPage = () => {
           {/* Amenities Bento Grid */}
           <section>
             <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">
-              Popular Amenities
+              Hotel Amenities & Features
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {hotel.facilities && hotel.facilities.length > 0 ? (
-                hotel.facilities.map((amenity, index) => (
+              {((hotel.amenities && hotel.amenities.length > 0) ? hotel.amenities : (hotel.facilities && hotel.facilities.length > 0) ? hotel.facilities : null) ? (
+                ((hotel.amenities && hotel.amenities.length > 0) ? hotel.amenities : hotel.facilities).map((amenity, index) => (
                   <div
                     key={index}
                     className="bg-white/70 backdrop-blur-md border border-gray-200/60 p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 hover:border-rose-300 hover:bg-rose-50/30 transition-all duration-300 group"
@@ -640,68 +778,109 @@ const HotelDetailsPage = () => {
             </h2>
             {rooms.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {rooms.map(room => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    key={room._id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col"
-                  >
-                    {/* Room Images Slider */}
-                    <div className="h-56 relative bg-gray-100">
-                      {room.room_images && room.room_images.length > 0 ? (
-                        <Slider {...roomSliderSettings} className="h-full">
-                          {room.room_images.map((image, index) => (
-                            <div key={index} className="h-56">
-                              <img
-                                src={getImageUrl(image)}
-                                alt={`${room.room_type} ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
-                        </Slider>
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center">
-                          <span className="text-gray-400 font-medium">No images available</span>
+                {rooms.map(room => {
+                  const statusInfo = getRoomStatusInfo(room);
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      key={room._id}
+                      className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col relative"
+                    >
+                      {/* Status Badge */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase border shadow-md backdrop-blur-md ${statusInfo.badgeClass}`}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+
+                      {/* Room Number Badge */}
+                      {room.room_number && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <span className="px-3 py-1 rounded-full text-xs font-black bg-gray-900/80 text-white border border-white/20 shadow-md backdrop-blur-md">
+                            Room {room.room_number}
+                          </span>
                         </div>
                       )}
-                    </div>
 
-                    <div className="p-6 flex flex-col flex-grow">
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-bold text-gray-900">{room.room_type}</h3>
-                        <div className="bg-red-50 text-red-700 px-3 py-1 rounded-lg font-bold text-sm">
-                          ₹{room.room_price_per_day} <span className="font-normal text-xs">/ night</span>
-                        </div>
+                      {/* Room Images Slider */}
+                      <div className="h-56 relative bg-gray-100">
+                        {room.room_images && room.room_images.length > 0 ? (
+                          <Slider {...roomSliderSettings} className="h-full">
+                            {room.room_images.map((image, index) => (
+                              <div key={index} className="h-56">
+                                <img
+                                  src={getImageUrl(image)}
+                                  alt={`${room.room_type} ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </Slider>
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <span className="text-gray-400 font-medium">No images available</span>
+                          </div>
+                        )}
                       </div>
 
-                      <p className="text-gray-600 mb-6 line-clamp-3 flex-grow">{room.description}</p>
-
-                      <div className="mb-6">
-                        <div className="flex flex-wrap gap-2">
-                          {room.facilities && room.facilities.slice(0, 4).map((amenity, index) => (
-                            <span key={index} className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-100/50">
-                              <span className="text-sm">{getAmenityIcon(amenity)}</span>
-                              {amenity}
-                            </span>
-                          ))}
-                          {room.facilities && room.facilities.length > 4 && (
-                            <span className="text-gray-400 text-xs font-medium py-1.5 px-1">+ {room.facilities.length - 4} more</span>
-                          )}
+                      <div className="p-6 flex flex-col flex-grow">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900">{room.room_type}</h3>
+                            <p className="text-xs font-semibold text-gray-500 flex items-center gap-1 mt-1">
+                              <FiUser className="text-rose-500 text-sm" />
+                              <span>Capacity: <strong className="text-gray-800">{room.max_occupancy} Guests</strong></span>
+                            </p>
+                          </div>
+                          <div className="bg-red-50 text-red-700 px-3 py-1.5 rounded-lg font-bold text-sm shrink-0">
+                            ₹{room.room_price_per_day} <span className="font-normal text-xs">/ night</span>
+                          </div>
                         </div>
-                      </div>
 
-                      <button
-                        className="w-full py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-lg shadow-gray-900/10 active:scale-[0.98]"
-                        onClick={() => handleBookingModalOpen(room)}
-                      >
-                        Book This Room
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                        {statusInfo.bookingText && (
+                          <div className="mb-4 bg-rose-50/80 border border-rose-200 text-rose-800 p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                            <FiClock className="shrink-0 text-rose-600 text-sm" />
+                            <span>{statusInfo.bookingText}</span>
+                          </div>
+                        )}
+
+                        <p className="text-gray-600 mb-6 line-clamp-3 flex-grow">{room.description}</p>
+
+                        <div className="mb-6">
+                          <div className="flex flex-wrap gap-2">
+                            {room.facilities && room.facilities.slice(0, 4).map((amenity, index) => (
+                              <span key={index} className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-100/50">
+                                <span className="text-sm">{getAmenityIcon(amenity)}</span>
+                                {amenity}
+                              </span>
+                            ))}
+                            {room.facilities && room.facilities.length > 4 && (
+                              <span className="text-gray-400 text-xs font-medium py-1.5 px-1">+ {room.facilities.length - 4} more</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {!statusInfo.isBookable ? (
+                          <button
+                            disabled
+                            className="w-full py-3.5 bg-gray-200 text-gray-400 font-bold rounded-xl border border-gray-300 cursor-not-allowed text-sm"
+                          >
+                            Under Maintenance
+                          </button>
+                        ) : (
+                          <button
+                            className="w-full py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-lg shadow-gray-900/10 active:scale-[0.98] text-sm cursor-pointer"
+                            onClick={() => handleBookingModalOpen(room)}
+                          >
+                            Book This Room
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-500 font-medium">No rooms available for this hotel at the moment.</p>
@@ -817,38 +996,63 @@ const HotelDetailsPage = () => {
               <div className="p-6">
 
                 {/* Step 1: Dates */}
-                {bookingStep === 1 && (
-                  <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      <div className="flex-1">
-                        <label className="block text-gray-700 font-medium mb-2 text-sm">Check-in Date</label>
-                        <div className="relative">
-                          <FiCalendar className="absolute left-4 top-3.5 text-rose-500" />
-                          <input
-                            type="date"
-                            name="startDate"
-                            value={bookingData.startDate}
-                            onChange={handleInputChange}
-                            min={new Date().toISOString().split('T')[0]}
-                            className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-rose-100 focus:border-rose-500 outline-none transition-all"
-                          />
+                {bookingStep === 1 && (() => {
+                  const bookedIntervals = (getRoomStatusInfo(selectedRoom).bookedRanges || []).map(b => {
+                    const s = parseYYYYMMDDToDate(b.bookingStartDate);
+                    const e = parseYYYYMMDDToDate(b.bookingEndDate);
+                    return { start: s, end: e };
+                  });
+
+                  return (
+                    <div className="space-y-6">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="flex-1">
+                          <label className="block text-gray-700 font-medium mb-2 text-sm">Check-in Date</label>
+                          <div className="relative">
+                            <FiCalendar className="absolute left-4 top-3.5 text-rose-500 z-10 pointer-events-none" />
+                            <DatePicker
+                              selected={parseYYYYMMDDToDate(bookingData.startDate)}
+                              onChange={(date) => {
+                                const formatted = formatDateToYYYYMMDD(date);
+                                setBookingData(prev => ({
+                                  ...prev,
+                                  startDate: formatted,
+                                  endDate: prev.endDate && parseYYYYMMDDToDate(prev.endDate) <= date ? '' : prev.endDate
+                                }));
+                              }}
+                              selectsStart
+                              startDate={parseYYYYMMDDToDate(bookingData.startDate)}
+                              endDate={parseYYYYMMDDToDate(bookingData.endDate)}
+                              minDate={new Date()}
+                              excludeDateIntervals={bookedIntervals}
+                              dateFormat="dd/MM/yyyy"
+                              placeholderText="Select Check-in Date"
+                              className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-rose-100 focus:border-rose-500 outline-none transition-all cursor-pointer font-semibold"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-gray-700 font-medium mb-2 text-sm">Check-out Date</label>
+                          <div className="relative">
+                            <FiCalendar className="absolute left-4 top-3.5 text-rose-500 z-10 pointer-events-none" />
+                            <DatePicker
+                              selected={parseYYYYMMDDToDate(bookingData.endDate)}
+                              onChange={(date) => {
+                                const formatted = formatDateToYYYYMMDD(date);
+                                setBookingData(prev => ({ ...prev, endDate: formatted }));
+                              }}
+                              selectsEnd
+                              startDate={parseYYYYMMDDToDate(bookingData.startDate)}
+                              endDate={parseYYYYMMDDToDate(bookingData.endDate)}
+                              minDate={bookingData.startDate ? parseYYYYMMDDToDate(bookingData.startDate) : new Date()}
+                              excludeDateIntervals={bookedIntervals}
+                              dateFormat="dd/MM/yyyy"
+                              placeholderText="Select Check-out Date"
+                              className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-rose-100 focus:border-rose-500 outline-none transition-all cursor-pointer font-semibold"
+                            />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-gray-700 font-medium mb-2 text-sm">Check-out Date</label>
-                        <div className="relative">
-                          <FiCalendar className="absolute left-4 top-3.5 text-rose-500" />
-                          <input
-                            type="date"
-                            name="endDate"
-                            value={bookingData.endDate}
-                            onChange={handleInputChange}
-                            min={bookingData.startDate || new Date().toISOString().split('T')[0]}
-                            className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-rose-100 focus:border-rose-500 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-                    </div>
 
                     <div className="bg-rose-50/50 border border-rose-100 p-5 rounded-2xl">
                       <h4 className="text-lg font-bold text-gray-900 mb-2">Selected Room Details</h4>
@@ -859,7 +1063,8 @@ const HotelDetailsPage = () => {
                       </p>
                     </div>
                   </div>
-                )}
+                );
+              })()}
 
                 {/* Step 2: Guests */}
                 {bookingStep === 2 && (

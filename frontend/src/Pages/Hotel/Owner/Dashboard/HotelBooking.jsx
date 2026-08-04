@@ -103,8 +103,8 @@ function HotelBookingManagement() {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    const options = { year: 'numeric', month: 'short', day: '2-digit' };
+    return new Date(dateString).toLocaleDateString('en-GB', options);
   };
 
   const getStatusBadge = (status) => {

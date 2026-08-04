@@ -19,7 +19,8 @@ import {
   X,
   Sparkles,
   Tag,
-  ShieldCheck
+  ShieldCheck,
+  UploadCloud
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { motion, AnimatePresence } from "framer-motion";
@@ -126,6 +127,13 @@ function HotelRoomManagement() {
       }
       return { ...prev, newImages };
     });
+  };
+
+  const handleRemoveExistingRoomImage = (imagePath) => {
+    setCurrentRoom(prev => ({
+      ...prev,
+      room_images: (prev.room_images || []).filter(img => img !== imagePath)
+    }));
   };
 
   const handleAddFacility = () => {
@@ -597,37 +605,40 @@ function HotelRoomManagement() {
 
       {/* Add / Edit Room Modal */}
       {(showModal === "add" || showModal === "update") && (
-        <div className="fixed inset-0 flex justify-center items-center bg-black/60 backdrop-blur-sm z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 flex justify-center items-center bg-slate-900/60 backdrop-blur-md z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 md:p-8 space-y-6 max-h-[92vh] overflow-y-auto border border-slate-100">
             
-            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+            <div className="bg-slate-900 text-white -mx-6 -mt-6 md:-mx-8 md:-mt-8 p-6 md:p-8 rounded-t-3xl border-b border-slate-800 flex justify-between items-center">
               <div>
-                <h3 className="text-xl font-bold text-[#131b2e]">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2.5">
+                  <Bed className="w-5 h-5 text-rose-500 shrink-0" />
                   {showModal === "add" ? "Add New Room" : "Update Room Details"}
                 </h3>
-                <p className="text-xs text-slate-400">Configure room pricing, status, and features</p>
+                <p className="text-xs text-slate-400 mt-1 font-normal">
+                  Configure room pricing, status, amenities, and media
+                </p>
               </div>
               <button
                 onClick={() => setShowModal(null)}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2.5 cursor-pointer shrink-0"
               >
-                <X size={18} />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Hotel Select */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                   Select Hotel Property
                 </label>
                 <select
                   name="hotel"
                   value={currentRoom.hotel}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#b90538] cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all cursor-pointer font-bold"
                 >
-                  <option value="">-- Choose Hotel --</option>
+                  <option value="">-- Choose Hotel Property --</option>
                   {hotels.map((h) => (
                     <option key={h._id} value={h._id}>
                       {h.name}
@@ -638,14 +649,14 @@ function HotelRoomManagement() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Room Type
                   </label>
                   <select
                     name="room_type"
                     value={currentRoom.room_type}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538] cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all cursor-pointer font-bold"
                   >
                     {roomTypeOptions.map((t) => (
                       <option key={t} value={t}>
@@ -656,7 +667,7 @@ function HotelRoomManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Room Number / Code
                   </label>
                   <input
@@ -665,14 +676,14 @@ function HotelRoomManagement() {
                     value={currentRoom.room_number}
                     onChange={handleInputChange}
                     placeholder="e.g. 101, 204B"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Price per Day (₹)
                   </label>
                   <input
@@ -681,12 +692,12 @@ function HotelRoomManagement() {
                     value={currentRoom.room_price_per_day}
                     onChange={handleInputChange}
                     placeholder="1500"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Max Occupancy
                   </label>
                   <input
@@ -695,19 +706,19 @@ function HotelRoomManagement() {
                     value={currentRoom.max_occupancy}
                     onChange={handleInputChange}
                     placeholder="2"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                     Status
                   </label>
                   <select
                     name="status"
                     value={currentRoom.status}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#b90538] cursor-pointer capitalize"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all cursor-pointer font-bold capitalize"
                   >
                     {statusOptions.map((s) => (
                       <option key={s} value={s}>
@@ -720,7 +731,7 @@ function HotelRoomManagement() {
 
               {/* Facilities Tag Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
                   Facilities & Amenities
                 </label>
                 <div className="flex gap-2 mb-2">
@@ -730,22 +741,22 @@ function HotelRoomManagement() {
                     value={currentRoom.currentFacility}
                     onChange={handleInputChange}
                     placeholder="e.g. WiFi, Sea View, Balcony"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#b90538]"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 text-xs text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-[#b90538] transition-all font-medium"
                   />
                   <button
                     type="button"
                     onClick={handleAddFacility}
-                    className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-900"
+                    className="px-4 py-2 bg-slate-900 text-white rounded-2xl text-xs font-bold hover:bg-black transition-colors shrink-0 cursor-pointer shadow-xs"
                   >
-                    Add
+                    Add Facility
                   </button>
                 </div>
                 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-1">
                   {currentRoom.facilities.map((fac, idx) => (
-                    <span key={idx} className="flex items-center gap-1 text-xs bg-rose-50 text-rose-700 px-3 py-1 rounded-full border border-rose-100 font-bold">
+                    <span key={idx} className="flex items-center gap-1.5 text-xs bg-rose-50 text-rose-700 px-3 py-1 rounded-full border border-rose-100 font-extrabold shadow-2xs">
                       {fac}
-                      <button type="button" onClick={() => handleRemoveFacility(idx)} className="hover:text-red-900">
+                      <button type="button" onClick={() => handleRemoveFacility(idx)} className="hover:text-red-900 transition-colors cursor-pointer">
                         <X size={12} />
                       </button>
                     </span>
@@ -753,49 +764,110 @@ function HotelRoomManagement() {
                 </div>
               </div>
 
-              {/* Image Upload Input */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Room Photos
+              {/* Room Image Upload Box */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                    Room Gallery Photos
+                  </label>
+                  <span className="text-[11px] font-bold text-slate-400">
+                    {(currentRoom.room_images?.length || 0) + (currentRoom.newImages?.length || 0)} Photos Selected
+                  </span>
+                </div>
+
+                <label className="border-2 border-dashed border-rose-200 hover:border-rose-400 bg-rose-50/20 hover:bg-rose-50/50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 group text-center shadow-2xs">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-[#b90538] flex items-center justify-center mb-2.5 group-hover:scale-110 transition-all duration-300 shadow-md shadow-rose-500/10 border border-rose-100">
+                    <UploadCloud size={24} />
+                  </div>
+                  <p className="text-xs font-bold text-slate-800">
+                    <span className="text-[#b90538] font-extrabold hover:underline">Click to browse room photos</span> or drag & drop here
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    Upload high-quality PNG, JPG, or WEBP photos
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
                 </label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleImageChange}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700"
-                />
                 
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {currentRoom.newImages?.map((img, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
-                      <img src={img.preview} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5"
-                      >
-                        <X size={12} />
-                      </button>
+                <div className="space-y-4 pt-2">
+                  {currentRoom.room_images?.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Existing Room Photos ({currentRoom.room_images.length})
+                      </p>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                        {currentRoom.room_images.map((img, idx) => (
+                          <div key={idx} className="relative group aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">
+                            <img src={getImageUrl(img)} alt="Existing" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExistingRoomImage(img)}
+                                className="bg-rose-600 text-white rounded-full p-2 hover:bg-rose-700 transition-transform active:scale-95 shadow-md cursor-pointer"
+                                title="Delete existing photo"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                            {idx === 0 && (
+                              <span className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md">
+                                Cover
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  {currentRoom.newImages?.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-extrabold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        New Uploads ({currentRoom.newImages.length})
+                      </p>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                        {currentRoom.newImages.map((img, idx) => (
+                          <div key={idx} className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-emerald-400 shadow-xs bg-emerald-50">
+                            <img src={img.preview} alt="New Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="bg-rose-600 text-white rounded-full p-2 hover:bg-rose-700 transition-transform active:scale-95 shadow-md cursor-pointer"
+                                title="Remove new photo"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <div className="pt-5 border-t border-slate-100 flex justify-end items-center gap-3">
               <button
                 type="button"
                 onClick={() => setShowModal(null)}
-                className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddOrUpdateRoom}
-                className="px-6 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-500/20"
+                className="px-7 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-extrabold rounded-xl text-xs shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
               >
-                {showModal === "add" ? "Save Room" : "Update Room"}
+                {showModal === "add" ? "Save Room" : "Update Room Details"}
               </button>
             </div>
 
