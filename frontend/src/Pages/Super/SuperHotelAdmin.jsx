@@ -723,12 +723,18 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                             </div>
                             <div className="text-slate-500 flex items-center gap-1.5">
                               <Users size={12} className="text-slate-400 shrink-0" />
-                              <span>Owner: {owner.name}</span>
+                              <span>Owner: {owner.user?.name || owner.name || 'N/A'}</span>
                             </div>
-                            {owner.email && (
+                            {(owner.user?.email || owner.email) && (
                               <div className="text-slate-500 flex items-center gap-1.5">
                                 <Mail size={12} className="text-slate-400 shrink-0" />
-                                <span>{owner.email}</span>
+                                <span>{owner.user?.email || owner.email}</span>
+                              </div>
+                            )}
+                            {(owner.user?.contact || owner.contact || owner.phone) && (
+                              <div className="text-slate-500 flex items-center gap-1.5">
+                                <Phone size={12} className="text-slate-400 shrink-0" />
+                                <span>{owner.user?.contact || owner.contact || owner.phone}</span>
                               </div>
                             )}
                           </div>

@@ -14,7 +14,7 @@ const configureCloudinary = () => {
     });
 };
 
-export const uploadOnCloudinary = async (localFilePath, folder = "bookin-hub", retries = 2) => {
+export const uploadOnCloudinary = async (localFilePath, folder = "bookin-hub", retries = 3) => {
     let targetPath = localFilePath;
     let compressedPath = "";
 
@@ -53,10 +53,17 @@ export const uploadOnCloudinary = async (localFilePath, folder = "bookin-hub", r
 
         return response.secure_url;
     } catch (error) {
-        console.error("Cloudinary Upload Error:", error.message || error);
+        const errObj = error?.error || error;
+        const isReset = errObj?.code === 'ECONNRESET' ||
+                        errObj?.code === 'ETIMEDOUT' ||
+                        errObj?.syscall === 'read' ||
+                        String(errObj?.message).includes('ECONNRESET');
 
-        if (retries > 0 && (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT')) {
-            console.log(`Retrying upload for ${localFilePath}... (${retries} retries left)`);
+        console.error("Cloudinary Upload Error:", errObj?.message || error);
+
+        if (retries > 0 && isReset) {
+            console.log(`Connection reset detected. Retrying upload for ${localFilePath}... (${retries} retries left)`);
+            await new Promise(res => setTimeout(res, 1500));
             return uploadOnCloudinary(localFilePath, folder, retries - 1);
         }
 
@@ -68,7 +75,11 @@ export const uploadOnCloudinary = async (localFilePath, folder = "bookin-hub", r
 
 export const uploadMultipleOnCloudinary = async (files, folder = "bookin-hub") => {
     if (!files || files.length === 0) return [];
-    const uploadPromises = files.map((file) => uploadOnCloudinary(file.path, folder));
-    const urls = await Promise.all(uploadPromises);
-    return urls.filter(Boolean);
+    const urls = [];
+    for (const file of files) {
+        const url = await uploadOnCloudinary(file.path, folder);
+        if (url) urls.push(url);
+        await new Promise(res => setTimeout(res, 300));
+    }
+    return urls;
 };

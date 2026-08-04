@@ -42,9 +42,9 @@ export const markCompletedBookings = async () => {
                     bookingId: booking._id,
                     hotelName: booking.hotel?.name
                 });
-                logMessages.push(`✉️ Rating email sent to ${booking.user.email}`);
+                logMessages.push(`Rating email sent to ${booking.user.email}`);
             } catch (emailError) {
-                logMessages.push(`❌ Failed to send email to ${booking.user.email}: ${emailError.message}`);
+                logMessages.push(`Failed to send email to ${booking.user.email}: ${emailError.message}`);
             }
         })
     );

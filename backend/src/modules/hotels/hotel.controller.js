@@ -214,7 +214,13 @@ const getOwnerHotels = asyncHandler(async (req, res) => {
 });
 
 const getUnapprovedHotels = asyncHandler(async (req, res) => {
-    const hotels = await Hotel.find({ isApproved: false }).populate("hotel_owner", "name email phone bussinessName bussinessRegNo");
+    const hotels = await Hotel.find({ isApproved: false }).populate({
+        path: "hotel_owner",
+        populate: {
+            path: "user",
+            select: "name email contact gender"
+        }
+    });
 
     const hotelsWithRoomCount = await Promise.all(
         hotels.map(async (hotel) => {
@@ -230,7 +236,13 @@ const getUnapprovedHotels = asyncHandler(async (req, res) => {
 });
 
 const getApprovedHotels = asyncHandler(async (req, res) => {
-    const hotels = await Hotel.find({ isApproved: true }).populate("hotel_owner", "name email phone bussinessName bussinessRegNo");
+    const hotels = await Hotel.find({ isApproved: true }).populate({
+        path: "hotel_owner",
+        populate: {
+            path: "user",
+            select: "name email contact gender"
+        }
+    });
 
     const hotelsWithRoomCount = await Promise.all(
         hotels.map(async (hotel) => {
