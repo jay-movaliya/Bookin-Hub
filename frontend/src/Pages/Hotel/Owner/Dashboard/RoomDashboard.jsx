@@ -182,6 +182,28 @@ function HotelRoomManagement() {
       return;
     }
 
+    const selectedHotelObj = hotels.find(h => h._id === currentRoom.hotel);
+    if (selectedHotelObj && !selectedHotelObj.isApproved) {
+      Swal.fire({
+        icon: "error",
+        title: "Hotel Property Not Approved",
+        text: "Your hotel property has not been approved by the Admin yet. You cannot add rooms until your hotel property is verified.",
+        confirmButtonColor: "#b90538",
+      });
+      return;
+    }
+
+    const isAdding = showModal === "add";
+    Swal.fire({
+      title: isAdding ? "Adding Room..." : "Saving Changes...",
+      text: "Please wait while room details and images are being processed...",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
     try {
       const formData = new FormData();
       formData.append('hotel', currentRoom.hotel);
@@ -228,7 +250,7 @@ function HotelRoomManagement() {
       Swal.fire({
         icon: "success",
         title: "Success!",
-        text: `Room ${showModal === "add" ? "added" : "updated"} successfully.`,
+        text: `Room ${isAdding ? "added" : "updated"} successfully.`,
         confirmButtonColor: "#b90538",
       });
 
@@ -332,9 +354,29 @@ function HotelRoomManagement() {
 
         <button
           onClick={() => {
+            const hasApprovedHotel = hotels.some(h => h.isApproved);
+            if (hotels.length === 0) {
+              Swal.fire({
+                icon: "warning",
+                title: "No Hotel Property Found",
+                text: "Please register your hotel property first before adding rooms.",
+                confirmButtonColor: "#b90538",
+              });
+              return;
+            }
+            if (!hasApprovedHotel) {
+              Swal.fire({
+                icon: "error",
+                title: "Hotel Property Pending Verification",
+                text: "Your hotel property has not been approved by the Admin yet. Room creation is disabled until verification.",
+                confirmButtonColor: "#b90538",
+              });
+              return;
+            }
+            const firstApproved = hotels.find(h => h.isApproved);
             setCurrentRoom({
               _id: null,
-              hotel: hotels[0]?._id || "",
+              hotel: firstApproved?._id || hotels[0]?._id || "",
               room_type: "Deluxe",
               room_price_per_day: 1500,
               room_images: [],

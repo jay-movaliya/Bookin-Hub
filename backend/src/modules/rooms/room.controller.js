@@ -3,6 +3,7 @@ import Hotel from "../hotels/hotel.model.js";
 import { ApiError } from "../../shared/ApiError.js";
 import { ApiResponse } from "../../shared/ApiResponse.js";
 import { asyncHandler } from "../../shared/asyncHandler.js";
+import { uploadMultipleOnCloudinary } from "../../utils/cloudinary.js";
 
 const addRooms = asyncHandler(async (req, res) => {
     const { hotel, room_type, room_price_per_day, status, facilities, max_occupancy, room_number } = req.body;
@@ -20,7 +21,24 @@ const addRooms = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Hotel not found");
     }
 
-    const roomImages = req.files.map(file => file.path);
+    if (!existedHotel.isApproved) {
+        return res.status(403).json({
+            message: "Your hotel property has not been approved by the Admin yet. You cannot add rooms until your hotel is verified and approved.",
+            status: false
+        });
+    }
+
+    if (existedHotel.status === "blocked") {
+        return res.status(403).json({
+            message: "Your hotel property operation license has been suspended or blocked. Adding rooms is disabled.",
+            status: false
+        });
+    }
+
+    const roomImages = await uploadMultipleOnCloudinary(req.files, "bookin-hub/rooms");
+    if (roomImages.length === 0) {
+        return res.status(500).json({ message: "Failed to upload room images to Cloudinary", status: false });
+    }
 
     const newRoom = await HotelRoom.create({
         hotel: hotel,
@@ -101,7 +119,7 @@ const updateRoomImages = asyncHandler(async (req, res) => {
 
     let newImages = [];
     if (req.files && req.files.length > 0) {
-        newImages = req.files.map(file => file.path);
+        newImages = await uploadMultipleOnCloudinary(req.files, "bookin-hub/rooms");
     }
 
     room.room_images = [...room.room_images, ...newImages];

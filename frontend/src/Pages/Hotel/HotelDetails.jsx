@@ -240,6 +240,18 @@ const HotelDetailsPage = () => {
   };
 
   const getRoomStatusInfo = (room) => {
+    const isHotelBlocked = hotel && hotel.status === "blocked";
+    if (isHotelBlocked) {
+      return {
+        status: "blocked",
+        label: "Hotel License Suspended / Expired",
+        badgeClass: "bg-rose-100 text-rose-900 border-rose-300 font-extrabold",
+        isBookable: false,
+        bookingText: "Hotel license suspended by administration",
+        bookedRanges: [],
+      };
+    }
+
     const isHotelMaintenance = hotel && (hotel.status === "maintenance" || hotel.status === "under maintenance");
     if (isHotelMaintenance) {
       return {
@@ -375,6 +387,15 @@ const HotelDetailsPage = () => {
   };
 
   const checkAvailability = async () => {
+    if (hotel && hotel.status === "blocked") {
+      Swal.fire({
+        icon: 'error',
+        title: 'Booking Unavailable',
+        text: 'The operation license for this hotel has been suspended or expired by administration. Booking is currently disabled.',
+        confirmButtonColor: '#ef4444',
+      });
+      return;
+    }
     if (!validateStep1()) return;
     if (!selectedRoom && rooms.length > 0) {
       setSelectedRoom(rooms[0]);
@@ -631,6 +652,21 @@ const HotelDetailsPage = () => {
           <FiArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform" />
           <span>Back to Search</span>
         </button>
+
+        {/* License Expired / Blocked Alert Banner */}
+        {hotel.status === "blocked" && (
+          <div className="bg-rose-50 border-2 border-rose-200/80 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
+            <FiAlertTriangle className="text-rose-600 text-3xl shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-extrabold text-lg text-rose-900 mb-1 flex items-center gap-2">
+                <span>Hotel Operation License Suspended / Expired</span>
+              </h3>
+              <p className="text-sm text-rose-700 font-medium leading-relaxed">
+                The official operating license for this property has been suspended or expired by administration. New room reservations and booking requests are currently disabled until further notice.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Hero Gallery Section */}
         <section className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 h-[420px] md:h-[520px] rounded-3xl overflow-hidden shadow-lg border border-white/50 relative">

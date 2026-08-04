@@ -61,7 +61,10 @@ const verifyHotelOwner = asyncHandler(async (req, res, next) => {
 
         const decodedinfo = jwt.verify(token, process.env.SECRET_KEY);
 
-        const owner = await HotelOwner.findById(decodedinfo?._id);
+        let owner = await HotelOwner.findById(decodedinfo?._id).populate("user");
+        if (!owner && decodedinfo?.user?._id) {
+            owner = await HotelOwner.findOne({ user: decodedinfo.user._id }).populate("user");
+        }
 
         if (!owner) {
             throw new ApiError(404, "Invalid Access Token");

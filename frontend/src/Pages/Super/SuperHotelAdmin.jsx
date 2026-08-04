@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
+import Cookies from 'js-cookie';
 import {
   Users,
   CheckCircle2,
@@ -38,6 +39,14 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [showOwnerModal, setShowOwnerModal] = useState(false);
 
+  const getAuthHeaders = () => {
+    const token = Cookies.get('token') || localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+  };
+
   useEffect(() => {
     if (defaultTab) {
       setActiveTab(defaultTab);
@@ -67,7 +76,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/admin/get-approved-hotel-owner`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       const data = await response.json();
@@ -86,7 +95,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/admin/get-unapproved-hotel-owner`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       const data = await response.json();
@@ -105,7 +114,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/admin/get-approved-hotels`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       const data = await response.json();
@@ -122,7 +131,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/admin/get-unapproved-hotels`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       const data = await response.json();
@@ -157,7 +166,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/admin/get-owner-hotels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify({ ownerId: owner._id }),
       });
@@ -196,7 +205,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
       if (type === 'approve') {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/admin/approve-owner`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           credentials: 'include',
           body: JSON.stringify({ hotelId: ownerId }),
         });
@@ -215,7 +224,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
       } else if (type === 'reject') {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/admin/reject-owner`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           credentials: 'include',
           body: JSON.stringify({ hotelId: ownerId }),
         });
@@ -244,6 +253,100 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     }
   };
 
+  // Trigger direct Approve Owner
+  const triggerApproveOwner = async (ownerId, ownerName) => {
+    const result = await Swal.fire({
+      title: 'Approve Hotel Owner?',
+      text: `Are you sure you want to approve "${ownerName}" as an official hotel owner?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Approve Owner',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/admin/approve-owner`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ hotelId: ownerId }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setShowOwnerModal(false);
+        await Promise.all([fetchApprovedOwners(), fetchUnapprovedOwners()]);
+        Swal.fire({
+          icon: 'success',
+          title: 'Owner Approved!',
+          text: `"${ownerName}" has been approved successfully.`,
+          confirmButtonColor: '#10b981',
+        });
+      } else {
+        throw new Error(data.message || 'Failed to approve hotel owner');
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Approval Failed',
+        text: err.message,
+        confirmButtonColor: '#dc2626',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Trigger direct Reject Owner
+  const triggerRejectOwner = async (ownerId, ownerName) => {
+    const result = await Swal.fire({
+      title: 'Reject Hotel Owner?',
+      text: `Are you sure you want to reject "${ownerName}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Reject Owner',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/admin/reject-owner`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ hotelId: ownerId }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setShowOwnerModal(false);
+        await Promise.all([fetchApprovedOwners(), fetchUnapprovedOwners()]);
+        Swal.fire({
+          icon: 'success',
+          title: 'Owner Rejected',
+          text: `"${ownerName}" registration request has been rejected.`,
+          confirmButtonColor: '#10b981',
+        });
+      } else {
+        throw new Error(data.message || 'Failed to reject hotel owner');
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Rejection Failed',
+        text: err.message,
+        confirmButtonColor: '#dc2626',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle Hotel Approval
   const handleApproveHotel = async (hotelId, hotelName) => {
     const result = await Swal.fire({
@@ -262,7 +365,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/admin/approve-hotel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify({ hotel_id: hotelId }),
       });
@@ -308,7 +411,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/admin/reject-hotel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify({ hotel_id: hotelId }),
       });
@@ -360,7 +463,7 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/admin/toggle-block-hotel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify({ hotel_id: hotelId, status: isCurrentlyBlocked ? 'available' : 'blocked' }),
       });
@@ -581,22 +684,22 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                           e.target.src = "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop";
                         }}
                       />
-                      <div className="absolute top-3 left-3 flex flex-col gap-1">
+                      <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
                         {hotel.status === 'blocked' ? (
-                          <span className="bg-red-600/90 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                          <span className="bg-red-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
                             <Ban size={12} /> Blocked by Admin
                           </span>
                         ) : hotel.isApproved ? (
-                          <span className="bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                          <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
                             <CheckCircle2 size={12} /> Approved
                           </span>
                         ) : (
-                          <span className="bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                          <span className="bg-amber-500 text-slate-900 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
                             <Clock size={12} /> Pending Approval
                           </span>
                         )}
                       </div>
-                      <div className="absolute top-3 right-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <div className="absolute top-3 right-3 bg-slate-900/90 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md z-10">
                         <Bed className="w-3.5 h-3.5 text-rose-400" />
                         {hotel.totalRooms || '0'} Rooms
                       </div>
@@ -669,11 +772,10 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                           <>
                             <button
                               onClick={() => handleToggleBlockHotel(hotel._id, hotel.name, hotel.status)}
-                              className={`flex-1 px-3 py-2 font-bold text-xs rounded-xl transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
-                                hotel.status === 'blocked'
+                              className={`flex-1 px-3 py-2 font-bold text-xs rounded-xl transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${hotel.status === 'blocked'
                                   ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
                                   : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
-                              }`}
+                                }`}
                             >
                               <Ban size={14} />
                               {hotel.status === 'blocked' ? 'Unblock Hotel' : 'Block Hotel'}
@@ -733,20 +835,20 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-800 flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-extrabold text-xs flex items-center justify-center">
-                              {owner.name?.charAt(0) || 'O'}
+                              {(owner.user?.name || owner.name)?.charAt(0) || 'O'}
                             </div>
-                            {owner.name}
+                            {owner.user?.name || owner.name}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-xs text-slate-700 flex items-center gap-1">
                             <Mail className="w-3 h-3 text-slate-400" />
-                            {owner.email}
+                            {owner.user?.email || owner.email}
                           </div>
-                          {owner.phone && (
+                          {(owner.user?.contact || owner.contact || owner.phone) && (
                             <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                               <Phone className="w-3 h-3 text-slate-400" />
-                              {owner.phone}
+                              {owner.user?.contact || owner.contact || owner.phone}
                             </div>
                           )}
                         </td>
@@ -766,6 +868,22 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {!owner.isApproved && (
+                              <>
+                                <button
+                                  onClick={() => triggerApproveOwner(owner._id, owner.name)}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Check size={14} /> Approve
+                                </button>
+                                <button
+                                  onClick={() => triggerRejectOwner(owner._id, owner.name)}
+                                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-all border border-rose-200/60 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <X size={14} /> Reject
+                                </button>
+                              </>
+                            )}
                             <button
                               onClick={() => fetchOwnerHotels(owner)}
                               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all flex items-center gap-1 cursor-pointer"
@@ -844,18 +962,18 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                               e.target.src = "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop";
                             }}
                           />
-                          <div className="absolute top-3 left-3">
+                          <div className="absolute top-3 left-3 z-10">
                             {hotel.isApproved ? (
-                              <span className="bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
                                 <CheckCircle2 size={12} /> Approved
                               </span>
                             ) : (
-                              <span className="bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <span className="bg-amber-500 text-slate-900 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
                                 <Clock size={12} /> Pending
                               </span>
                             )}
                           </div>
-                          <div className="absolute top-3 right-3 bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <div className="absolute top-3 right-3 bg-slate-900/90 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md z-10">
                             <Bed className="w-3.5 h-3.5 text-rose-400" />
                             {hotel.totalRooms || '0'} Rooms
                           </div>
@@ -923,21 +1041,49 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
                 <div className="bg-slate-50/80 rounded-2xl p-4 space-y-3 border border-slate-100 text-sm">
                   <div className="flex justify-between items-center py-1 border-b border-slate-200/50">
                     <span className="text-slate-500 font-medium">Full Name</span>
-                    <span className="text-slate-900 font-bold">{selectedOwner.name}</span>
+                    <span className="text-slate-900 font-bold">{selectedOwner.user?.name || selectedOwner.name}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-slate-200/50">
                     <span className="text-slate-500 font-medium">Email Address</span>
-                    <span className="text-slate-900 font-semibold">{selectedOwner.email}</span>
+                    <span className="text-slate-900 font-semibold">{selectedOwner.user?.email || selectedOwner.email}</span>
                   </div>
-                  <div className="flex justify-between items-center py-1">
+                  <div className="flex justify-between items-center py-1 border-b border-slate-200/50">
+                    <span className="text-slate-500 font-medium">Phone Contact</span>
+                    <span className="text-slate-900 font-semibold">{selectedOwner.user?.contact || selectedOwner.contact || selectedOwner.phone || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-200/50">
+                    <span className="text-slate-500 font-medium">Gender</span>
+                    <span className="text-slate-900 font-semibold capitalize">{selectedOwner.user?.gender || selectedOwner.gender || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-200/50">
                     <span className="text-slate-500 font-medium">Business Name</span>
                     <span className="text-slate-900 font-bold">{selectedOwner.bussinessName}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-slate-500 font-medium">Registration No.</span>
+                    <span className="text-slate-900 font-semibold">{selectedOwner.bussinessRegNo}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+              {!selectedOwner.isApproved && (
+                <>
+                  <button
+                    onClick={() => triggerApproveOwner(selectedOwner._id, selectedOwner.name)}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check size={14} /> Approve Owner
+                  </button>
+                  <button
+                    onClick={() => triggerRejectOwner(selectedOwner._id, selectedOwner.name)}
+                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-all border border-rose-200/60 flex items-center gap-1 cursor-pointer"
+                  >
+                    <X size={14} /> Reject
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => setShowOwnerModal(false)}
                 className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
@@ -953,9 +1099,8 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
       {showConfirmationModal && (
         <div className="fixed inset-0 flex justify-center items-center bg-slate-900/50 backdrop-blur-sm z-50 p-4">
           <div className="bg-white p-6 rounded-3xl shadow-2xl max-w-md w-full border border-slate-100 animate-in fade-in duration-200">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
-              currentAction.type === 'approve' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-            }`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${currentAction.type === 'approve' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+              }`}>
               {currentAction.type === 'approve' ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
             </div>
             <h3 className="text-xl font-bold mb-1 text-slate-900 tracking-tight">
@@ -973,9 +1118,8 @@ function SuperHotelAdmin({ defaultTab = 'approved' }) {
               </button>
               <button
                 onClick={() => handleConfirmation(true)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-all text-white cursor-pointer ${
-                  currentAction.type === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-all text-white cursor-pointer ${currentAction.type === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
+                  }`}
               >
                 {currentAction.type === 'approve' ? 'Yes, Approve Owner' : 'Yes, Reject Request'}
               </button>

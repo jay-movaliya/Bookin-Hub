@@ -20,7 +20,7 @@ import logo from "../assets/logo.png";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState(null); // 'customer' | 'hotelOwner' | 'admin'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,21 +33,29 @@ const Navbar = () => {
     if (activeToken) {
       try {
         const decoded = jwtDecode(activeToken);
-        if (decoded.user) {
+        const type = decoded.user?.type || (decoded.hotel_owner ? "hotelOwner" : null) || decoded.type;
+
+        if (type === "admin") {
+          setUserRole("admin");
           setIsLoggedIn(true);
-          setIsAdmin(decoded.user?.type === 'admin');
+        } else if (type === "hotelOwner" || decoded.hotel_owner) {
+          setUserRole("hotelOwner");
+          setIsLoggedIn(true);
+        } else if (decoded.user || type === "customer") {
+          setUserRole("customer");
+          setIsLoggedIn(true);
         } else {
           setIsLoggedIn(false);
-          setIsAdmin(false);
+          setUserRole(null);
         }
       } catch (error) {
         console.error("Error decoding token:", error);
         setIsLoggedIn(false);
-        setIsAdmin(false);
+        setUserRole(null);
       }
     } else {
       setIsLoggedIn(false);
-      setIsAdmin(false);
+      setUserRole(null);
     }
   }, [location.pathname]);
 
@@ -55,7 +63,7 @@ const Navbar = () => {
     Cookies.remove("token");
     localStorage.removeItem("token");
     setIsLoggedIn(false);
-    setIsAdmin(false);
+    setUserRole(null);
     navigate("/");
   };
 
@@ -147,20 +155,36 @@ const Navbar = () => {
             <span>Contact Us</span>
           </Link>
 
-          {/* Admin Dashboard Link */}
-          {isAdmin && (
+          {/* Conditional Dashboard Link */}
+          {isLoggedIn && userRole === "admin" && (
             <Link
-              to="/super/dashboard/"
+              to="/super/dashboard"
               onClick={() => setIsMenuOpen(false)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-200 ${location.pathname.startsWith("/super/dashboard")
+                  ? "bg-[#b90538] text-white font-extrabold shadow-md shadow-rose-500/30"
+                  : "text-gray-300 hover:text-white hover:bg-white/10"
+                }`}
             >
               <Shield size={16} />
-              <span>Admin</span>
+              <span>Admin Dashboard</span>
             </Link>
           )}
 
-          {/* User Dashboard Link */}
-          {isLoggedIn && (
+          {isLoggedIn && userRole === "hotelOwner" && (
+            <Link
+              to="/hotelowner/dashboard"
+              onClick={() => setIsMenuOpen(false)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-200 ${location.pathname.startsWith("/hotelowner/dashboard")
+                  ? "bg-[#b90538] text-white font-extrabold shadow-md shadow-rose-500/30"
+                  : "text-gray-300 hover:text-white hover:bg-white/10"
+                }`}
+            >
+              <User size={16} />
+              <span>Owner Dashboard</span>
+            </Link>
+          )}
+
+          {isLoggedIn && userRole === "customer" && (
             <Link
               to="/userdashboard"
               onClick={() => setIsMenuOpen(false)}
@@ -170,7 +194,7 @@ const Navbar = () => {
                 }`}
             >
               <User size={16} />
-              <span>Dashboard</span>
+              <span>User Dashboard</span>
             </Link>
           )}
 

@@ -13,7 +13,13 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
     storage,
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB limit per image (compression handled automatically before Cloudinary)
+    },
     fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith("image/")) {
+            return cb(new Error("Only image files are allowed!"), false);
+        }
         cb(null, true);
     }
 });

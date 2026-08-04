@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Cookies from "js-cookie";
+import Swal from "sweetalert2";
 import { FaKey } from "react-icons/fa";
 
 const VerifyHotelOwnerOtp = () => {
@@ -37,9 +39,22 @@ const VerifyHotelOwnerOtp = () => {
         { email, otp: parseInt(otpValue) }
       );
 
-      if (response.data.message === "Hotel Owner verified successfully") {
-        alert("OTP Verified Successfully!");
-        navigate("/dashboard"); // Redirect to dashboard after success
+      if (response.data.statusCode === 200 || response.data.message?.toLowerCase().includes("verified")) {
+        const token = response.data.data;
+        if (token) {
+          Cookies.set("token", token);
+          localStorage.setItem("token", token);
+        }
+        Swal.fire({
+          icon: 'success',
+          title: 'Account Verified!',
+          text: 'Your account has been verified successfully. Redirecting to your dashboard...',
+          confirmButtonColor: '#ef4444',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          window.location.href = "/hotelowner/dashboard";
+        });
       } else {
         setError(response.data.message);
       }

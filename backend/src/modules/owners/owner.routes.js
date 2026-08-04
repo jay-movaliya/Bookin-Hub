@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { logineHotelOwner, registerHotelOwner, approveHotelOwner, rejectHotelOwner, getHotelOwner, getUnapprovedHotelOwner, verifyOtp, getApprovedHotelOwner, forgotPassword, resetPassword } from "./owner.controller.js";
+import { logineHotelOwner, registerHotelOwner, getOwnerProfile, approveHotelOwner, rejectHotelOwner, getHotelOwner, getUnapprovedHotelOwner, verifyOtp, getApprovedHotelOwner, forgotPassword, resetPassword } from "./owner.controller.js";
 import { verifyHotelOwner } from "../../middleware/auth.middleware.js";
 import { verifyAdmin } from "../../middleware/auth.middleware.js";
 
@@ -10,6 +10,7 @@ hotelOwnerRouter.route("/verify-otp").post(verifyOtp);
 hotelOwnerRouter.route("/login").post(logineHotelOwner);
 hotelOwnerRouter.route("/forgot-password").post(forgotPassword);
 hotelOwnerRouter.route("/reset-password").post(resetPassword);
+hotelOwnerRouter.route("/profile").get(verifyHotelOwner, getOwnerProfile);
 
 hotelOwnerRouter.route("/get-hotel-owner").get(verifyHotelOwner, getHotelOwner);
 

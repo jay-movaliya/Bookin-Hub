@@ -206,7 +206,7 @@ const loginUser = async (req, res) => {
                         <div class="otp-code">${otp}</div>
                     </div>
                     
-                    <p class="expiry-text">This code expires in 10 minutes. If you did not attempt to sign in, please secure your account immediately.</p>
+                    <p class="expiry-text">This code expires in 5 minutes. If you did not attempt to sign in, please secure your account immediately.</p>
                 </div>
                 <div class="footer">
                     <p class="footer-text">© ${new Date().getFullYear()} BookinHub. All rights reserved.</p>
@@ -300,7 +300,7 @@ const forgotPassword = async (req, res) => {
                         <div class="otp-code">${otp}</div>
                     </div>
                     
-                    <p class="expiry-text">This code expires in 10 minutes. If you did not request a password reset, please ignore this email.</p>
+                    <p class="expiry-text">This code expires in 5 minutes. If you did not request a password reset, please ignore this email.</p>
                 </div>
                 <div class="footer">
                     <p class="footer-text">© ${new Date().getFullYear()} BookinHub. All rights reserved.</p>

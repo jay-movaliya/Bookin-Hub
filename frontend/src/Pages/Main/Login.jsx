@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import { Mail, Lock, LogIn } from "lucide-react";
 import Swal from "sweetalert2";
 
@@ -29,6 +30,24 @@ const Login = () => {
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/user/login`, { email, password });
       if (response.data.message === "Login successful") {
+        const token = response.data.data;
+        Cookies.set("token", token);
+        localStorage.setItem("token", token);
+
+        let redirectUrl = "/";
+        try {
+          const decoded = jwtDecode(token);
+          if (decoded.user?.type === "admin" || decoded.type === "admin") {
+            redirectUrl = "/super/dashboard";
+          } else if (decoded.user?.type === "hotelOwner" || decoded.hotel_owner) {
+            redirectUrl = "/hotelowner/dashboard";
+          } else {
+            redirectUrl = "/";
+          }
+        } catch (err) {
+          console.error("Token decode error:", err);
+        }
+
         Swal.fire({
           icon: 'success',
           title: 'Welcome Back!',
@@ -37,13 +56,12 @@ const Login = () => {
           timer: 1500,
           showConfirmButton: false
         }).then(() => {
-          Cookies.set("token", response.data.data);
-          localStorage.setItem("token", response.data.data);
-          window.location.href = "http://localhost:5173/";
+          window.location.href = redirectUrl;
         });
       }
     } catch (error) {
-      if (error.response?.data?.message === "User not verified") {
+      const backendMessage = error.response?.data?.message;
+      if (backendMessage === "User not verified") {
         Swal.fire({
           icon: 'info',
           title: 'Account Not Verified',
@@ -54,12 +72,21 @@ const Login = () => {
         }).then(() => {
           navigate("/otp/" + email);
         });
+      } else if (backendMessage === "User not found" || error.response?.status === 404) {
+        setErrorMessage("User not found");
+        Swal.fire({
+          icon: 'error',
+          title: 'User Not Found',
+          text: 'No user account found with this email address. Please register first.',
+          confirmButtonColor: '#ef4444',
+        });
       } else {
-        setErrorMessage("Enter valid credentials");
+        const msg = backendMessage || "Please check your email and password and try again.";
+        setErrorMessage(msg);
         Swal.fire({
           icon: 'error',
           title: 'Login Failed',
-          text: 'Please check your email and password and try again.',
+          text: msg,
           confirmButtonColor: '#ef4444',
         });
       }

@@ -98,13 +98,56 @@ function HotelManagement() {
     return text.length > length ? `${text.substring(0, length)}...` : text;
   };
 
+  const [ownerProfile, setOwnerProfile] = useState(null);
+
   useEffect(() => {
+    fetchOwnerProfile();
     fetchHotels();
     fetchBookings();
     return () => {
       currentHotel.images?.forEach(img => URL.revokeObjectURL(img.preview));
     };
   }, []);
+
+  const fetchOwnerProfile = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel/owner/profile`, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOwnerProfile(data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching owner profile:", err);
+    }
+  };
+
+  const handleAddHotelClick = () => {
+    if (ownerProfile && !ownerProfile.isApproved) {
+      Swal.fire({
+        icon: "warning",
+        title: "Account Pending Approval",
+        text: "Your hotel owner account is currently pending verification by the admin. You cannot add new hotel properties until your account is approved.",
+        confirmButtonColor: "#f59e0b",
+      });
+      return;
+    }
+    setCurrentHotel({
+      _id: null,
+      name: "",
+      description: "",
+      images: [],
+      hotelImages: [],
+      area: "",
+      district: "",
+      pincode: "",
+      longitude: "",
+      latitude: ""
+    });
+    setShowModal("add");
+  };
 
   const fetchHotels = async () => {
     setLoading(true);
@@ -113,17 +156,15 @@ function HotelManagement() {
         method: "GET",
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to fetch hotels");
-      const data = await response.json();
-      setHotels(data.data || []);
+      if (response.ok) {
+        const data = await response.json();
+        setHotels(data.data || []);
+      } else {
+        setHotels([]);
+      }
     } catch (err) {
       console.error("Error fetching hotels:", err);
-      Swal.fire({
-        icon: "error",
-        title: "Error!",
-        text: err.message,
-        confirmButtonColor: "#b90538",
-      });
+      setHotels([]);
     } finally {
       setLoading(false);
     }
@@ -218,6 +259,17 @@ function HotelManagement() {
   };
 
   const handleAddOrUpdateHotel = async () => {
+    const isAdding = showModal === "add";
+    Swal.fire({
+      title: isAdding ? "Adding Hotel..." : "Saving Changes...",
+      text: "Please wait while hotel details and images are being processed...",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
     try {
       const formData = new FormData();
       formData.append('name', currentHotel.name);
@@ -274,7 +326,7 @@ function HotelManagement() {
       Swal.fire({
         icon: "success",
         title: "Success!",
-        text: `Hotel ${showModal === "add" ? "added" : "updated"} successfully.`,
+        text: `Hotel ${isAdding ? "added" : "updated"} successfully.`,
         confirmButtonColor: "#b90538",
       });
 
@@ -406,21 +458,7 @@ function HotelManagement() {
 
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => {
-              setCurrentHotel({
-                _id: null,
-                name: "",
-                description: "",
-                images: [],
-                hotelImages: [],
-                area: "",
-                district: "",
-                pincode: "",
-                longitude: "",
-                latitude: ""
-              });
-              setShowModal("add");
-            }}
+            onClick={handleAddHotelClick}
             className="border border-slate-200 hover:border-[#b90538] text-[#131b2e] hover:text-[#b90538] text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-full transition-all flex items-center gap-1.5 bg-white cursor-pointer shadow-xs whitespace-nowrap"
           >
             <Building size={15} className="shrink-0" />
@@ -431,6 +469,24 @@ function HotelManagement() {
 
       {/* Main Container */}
       <div className="p-6 md:p-10 max-w-[1280px] mx-auto space-y-8">
+
+        {/* Pending Approval Warning Banner */}
+        {ownerProfile && !ownerProfile.isApproved && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-amber-900 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-amber-900 text-sm sm:text-base">Account Pending Admin Verification</h4>
+                <p className="text-xs text-amber-800 mt-0.5">Your hotel owner account is currently pending verification by our admin team. You can view your dashboard, but adding new hotels is restricted until your account is approved.</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-800 font-extrabold text-xs rounded-full border border-amber-500/30 shrink-0 hidden sm:inline-block">
+              Pending Approval
+            </span>
+          </div>
+        )}
 
         {/* Dynamic Stats Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">

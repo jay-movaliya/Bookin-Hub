@@ -12,6 +12,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -23,6 +24,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "razorpay": "^2.9.6",
+    "sharp": "^0.35.3",
     "uuid": "^11.1.0"
   }
 }

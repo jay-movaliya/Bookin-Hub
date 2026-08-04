@@ -57,9 +57,9 @@ function App() {
       if (token) {
         try {
           const decoded = jwtDecode(token);
-          setIsHotelOwner(!!decoded.hotel_owner);
+          setIsHotelOwner(!!decoded.hotel_owner || decoded.user?.type === "hotelOwner");
 
-          setIsAdmin(decoded.user?.type == "admin");
+          setIsAdmin(decoded.user?.type === "admin" || decoded.type === "admin");
           setIsUser(!!decoded.user);
         } catch (error) {
           console.error("Invalid token:", error);
@@ -106,9 +106,10 @@ function App() {
 
   const location = useLocation();
 
-  // Check if the current route is under "admin" to conditionally render Navbar and Footer
+  // Check if the current route is under "admin" or "super" to conditionally render Navbar and Footer
   const isAdminRoute =
     location.pathname.startsWith("/hotelowner") ||
+    location.pathname.startsWith("/super") ||
     location.pathname.startsWith("/airline-owner");
 
   return (

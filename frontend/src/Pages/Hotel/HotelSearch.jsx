@@ -359,7 +359,11 @@ const HotelSearchPage = () => {
                             </div>
                           ))}
                         </Slider>
-                        {hotel.status === "maintenance" && (
+                        {hotel.status === "blocked" ? (
+                          <div className="absolute top-4 left-4 bg-red-600 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center shadow-lg z-10 uppercase tracking-wider">
+                            License Expired
+                          </div>
+                        ) : hotel.status === "maintenance" && (
                           <div className="absolute top-4 left-4 bg-amber-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center shadow-lg z-10 uppercase tracking-wider">
                             Under Maintenance
                           </div>
@@ -416,7 +420,12 @@ const HotelSearchPage = () => {
                             ₹{hotel.minPrice || '0'} <span className="text-gray-400 text-sm font-normal">-</span> ₹{hotel.maxPrice || '0'}
                           </p>
                         </div>
-                        {hotel.status === "maintenance" ? (
+                        {hotel.status === "blocked" ? (
+                          <div className="flex items-center bg-rose-50 px-3 py-1 rounded-lg border border-rose-200">
+                            <span className="w-2 h-2 bg-rose-500 rounded-full mr-2"></span>
+                            <span className="text-rose-800 text-xs font-bold uppercase tracking-wider">License Expired</span>
+                          </div>
+                        ) : hotel.status === "maintenance" ? (
                           <div className="flex items-center bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">
                             <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
                             <span className="text-amber-800 text-xs font-bold uppercase tracking-wider">Maintenance</span>
@@ -431,7 +440,9 @@ const HotelSearchPage = () => {
 
                       <button
                         className={`w-full py-3.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] ${
-                          hotel.status === "maintenance"
+                          hotel.status === "blocked"
+                            ? "bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 cursor-pointer"
+                            : hotel.status === "maintenance"
                             ? "bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200"
                             : "bg-gray-900 hover:bg-black text-white shadow-gray-900/10 group-hover:shadow-gray-900/20"
                         }`}
@@ -440,7 +451,11 @@ const HotelSearchPage = () => {
                           handleHotelClick(hotel._id);
                         }}
                       >
-                        {hotel.status === "maintenance" ? "View Hotel (Maintenance)" : "View Details & Book"}
+                        {hotel.status === "blocked"
+                          ? "License Expired / Suspended"
+                          : hotel.status === "maintenance"
+                          ? "View Hotel (Maintenance)"
+                          : "View Details & Book"}
                       </button>
                     </div>
                   </div>

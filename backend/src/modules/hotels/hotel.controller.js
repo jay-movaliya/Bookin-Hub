@@ -3,6 +3,7 @@ import { ApiError } from "../../shared/ApiError.js";
 import { ApiResponse } from "../../shared/ApiResponse.js";
 import { asyncHandler } from "../../shared/asyncHandler.js";
 import { HotelRoom } from "../rooms/room.model.js";
+import { uploadMultipleOnCloudinary } from "../../utils/cloudinary.js";
 
 const parseArrayField = (body, fieldName) => {
     if (!body) return [];
@@ -35,7 +36,10 @@ const createHotel = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Please provide hotel images", status: false });
     }
 
-    const hotelImages = req.files.map(file => file.path);
+    const hotelImages = await uploadMultipleOnCloudinary(req.files, "bookin-hub/hotels");
+    if (hotelImages.length === 0) {
+        return res.status(500).json({ message: "Failed to upload images to Cloudinary", status: false });
+    }
     const address = { area, district, pincode, longitude, latitude };
     const parsedAmenities = parseArrayField(req.body, "amenities");
 
@@ -154,7 +158,7 @@ const updateHotelImages = asyncHandler(async (req, res) => {
 
     let newImages = [];
     if (req.files && req.files.length > 0) {
-        newImages = req.files.map(file => file.path);
+        newImages = await uploadMultipleOnCloudinary(req.files, "bookin-hub/hotels");
     }
 
     hotel.hotelImages = [...hotel.hotelImages, ...newImages];

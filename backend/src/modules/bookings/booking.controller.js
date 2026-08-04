@@ -30,6 +30,14 @@ const createBooking = asyncHandler(async (req, res) => {
             }
         }
 
+        const hotelObj = await Hotel.findById(hotel);
+        if (!hotelObj) {
+            return res.status(404).json({ message: "Hotel not found", status: false });
+        }
+        if (hotelObj.status === "blocked") {
+            return res.status(403).json({ message: "The operation license for this hotel has been suspended or expired. Booking is disabled.", status: false });
+        }
+
         const existingBooking = await HotelBooking.findOne({
             room,
             $or: [
@@ -52,7 +60,6 @@ const createBooking = asyncHandler(async (req, res) => {
             paymentStatus: "pending",
             personDetails
         });
-        const hotelObj = await Hotel.findById(hotel);
         await sendBookingConfirmation({ email: req.user.email, userName: req.user.name, bookingId: newBooking._id, hotelName: hotelObj.name, checkInDate: newBooking.bookingStartDate, checkOutDate: newBooking.bookingEndDate, totalAmount: newBooking.totalAmount });
         res.status(201).json(new ApiResponse(200, null, "Booking done successfully!"));
     } catch (error) {

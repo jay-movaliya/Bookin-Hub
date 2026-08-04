@@ -98,10 +98,10 @@ function SuperSideBar() {
       <div className="p-6 border-t border-slate-100">
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center w-full px-4 py-3.5 text-slate-600 text-base font-medium hover:bg-red-50 hover:text-red-600 rounded-xl transition-all duration-300 group border border-transparent hover:border-red-100"
+          className="flex items-center justify-center w-full px-4 py-3.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-2xl transition-all duration-300 shadow-md shadow-red-600/20 cursor-pointer"
           aria-label="Logout"
         >
-          <FaSignOutAlt className="mr-3 text-xl text-slate-400 group-hover:text-red-500 transition-colors" />
+          <FaSignOutAlt className="mr-3 text-lg text-white" />
           <span>Logout</span>
         </button>
       </div>
