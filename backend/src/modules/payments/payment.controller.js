@@ -1,9 +1,15 @@
 import { paymentService } from "./payment.service.js";
+import { HotelBooking } from "../bookings/booking.model.js";
 
 export const createPaymentOrder = async (req, res) => {
     try {
-        const { amount, currency } = req.body;
+        const { amount, currency, bookingId } = req.body;
         const order = await paymentService.createOrder(amount, currency);
+        
+        if (bookingId) {
+            await HotelBooking.findByIdAndUpdate(bookingId, { razorpay_order_id: order.id });
+        }
+
         res.json({ success: true, order });
     } catch (error) {
         console.log(error);

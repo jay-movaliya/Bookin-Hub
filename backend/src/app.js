@@ -12,6 +12,8 @@ import { hotelBookingRouter } from "./modules/bookings/booking.routes.js";
 import { paymentRouter } from "./modules/payments/payment.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { startBookingWorker } from "./workers/booking.worker.js";
+import { processSmsQueue } from "./workers/sms.worker.js";
+import { processEmailQueue } from "./workers/email.worker.js";
 
 const app = express();
 
@@ -42,5 +44,7 @@ app.use(errorHandler);
 
 // Start background cron workers
 startBookingWorker();
+processSmsQueue();
+processEmailQueue();
 
 export { app };

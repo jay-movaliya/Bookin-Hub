@@ -124,3 +124,26 @@ export const sendOtpEmail = async ({ email, otp, subject = "BookinHub OTP Verifi
 
     await transporter.sendMail(mailOptions);
 };
+
+export const sendWelcomeEmail = async ({ email, userName }) => {
+    const mailOptions = {
+        from: process.env.SMTP_USER,
+        to: email,
+        subject: "Welcome to BookinHub!",
+        html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2 style="color: #ef4444; text-align: center;">Welcome to BookinHub, ${userName}!</h2>
+            <p>Thank you for registering with us. We are excited to have you on board.</p>
+            <p>Start exploring and booking your favorite hotels today!</p>
+            <div style="margin-top: 30px; text-align: center;">
+                <a href="${process.env.FRONTEND_URL}" 
+                   style="background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                    Explore Now
+                </a>
+            </div>
+        </div>
+        `
+    };
+
+    await transporter.sendMail(mailOptions);
+};

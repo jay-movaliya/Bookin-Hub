@@ -1,7 +1,7 @@
 import { ApiResponse } from "../../shared/ApiResponse.js";
 import { asyncHandler } from "../../shared/asyncHandler.js";
 import { HotelBooking } from "./booking.model.js";
-import { HotelRoom } from "../rooms/room.model.js";
+// import { HotelRoom } from "../rooms/room.model.js";
 import Hotel from "../hotels/hotel.model.js";
 import { sendBookingCancellation, sendBookingConfirmation, sendRatingEmail } from "../../services/email.service.js";
 
@@ -15,7 +15,7 @@ const createBooking = asyncHandler(async (req, res) => {
             totalAmount,
             personDetails
         } = req.body;
-        
+
         const userId = req.user._id;
 
         if (!personDetails || !Array.isArray(personDetails) || personDetails.length === 0) {
@@ -61,7 +61,7 @@ const createBooking = asyncHandler(async (req, res) => {
             personDetails
         });
         await sendBookingConfirmation({ email: req.user.email, userName: req.user.name, bookingId: newBooking._id, hotelName: hotelObj.name, checkInDate: newBooking.bookingStartDate, checkOutDate: newBooking.bookingEndDate, totalAmount: newBooking.totalAmount });
-        res.status(201).json(new ApiResponse(200, null, "Booking done successfully!"));
+        res.status(201).json(new ApiResponse(200, { bookingId: newBooking._id }, "Booking done successfully!"));
     } catch (error) {
         res.status(500).json({ message: "Error creating booking", error: error.message, status: false });
     }

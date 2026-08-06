@@ -156,13 +156,6 @@ const HotelDetailsPage = () => {
     }
   }, [bookingData.startDate, bookingData.endDate, selectedRoom]);
 
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80";
-    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-    const cleanedPath = imagePath.replace(/^public[\\/]/, '');
-    return `${import.meta.env.VITE_API_URL}/${cleanedPath.replace(/\\/g, '/')}`;
-  };
-
   const getAmenityIcon = (name) => {
     if (!name) return <FiCheck />;
     const lowercaseName = name.toLowerCase();
@@ -548,11 +541,15 @@ const HotelDetailsPage = () => {
 
       if (!bookingResponse.ok) throw new Error('Booking creation failed');
 
+      const bookingDataRes = await bookingResponse.json();
+      const bookingId = bookingDataRes.data.bookingId;
+
       const razorpayLoaded = await initializeRazorpay();
       if (!razorpayLoaded) throw new Error('Razorpay SDK failed to load');
 
       const orderResponse = await axios.post(`${import.meta.env.VITE_API_URL}/create-order`, {
         amount: totalAmount * 100,
+        bookingId: bookingId,
       });
 
       if (!orderResponse.data.success) throw new Error('Order creation failed');
@@ -676,7 +673,7 @@ const HotelDetailsPage = () => {
             className="md:col-span-3 md:row-span-2 relative group cursor-pointer overflow-hidden bg-gray-900"
           >
             <img
-              src={getImageUrl(hotelImages[0])}
+              src={hotelImages[0]}
               alt={hotel.name}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
@@ -714,7 +711,7 @@ const HotelDetailsPage = () => {
             className="hidden md:block relative group cursor-pointer overflow-hidden bg-gray-900"
           >
             <img
-              src={getImageUrl(hotelImages[1] || hotelImages[0])}
+              src={hotelImages[1] || hotelImages[0]}
               alt={`${hotel.name} Interior`}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
@@ -726,7 +723,7 @@ const HotelDetailsPage = () => {
             className="hidden md:block relative group cursor-pointer overflow-hidden bg-gray-900"
           >
             <img
-              src={getImageUrl(hotelImages[2] || hotelImages[0])}
+              src={hotelImages[2] || hotelImages[0]}
               alt={`${hotel.name} View`}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
@@ -847,7 +844,7 @@ const HotelDetailsPage = () => {
                             {room.room_images.map((image, index) => (
                               <div key={index} className="h-56">
                                 <img
-                                  src={getImageUrl(image)}
+                                  src={image}
                                   alt={`${room.room_type} ${index + 1}`}
                                   className="w-full h-full object-cover"
                                 />
@@ -1090,17 +1087,17 @@ const HotelDetailsPage = () => {
                         </div>
                       </div>
 
-                    <div className="bg-rose-50/50 border border-rose-100 p-5 rounded-2xl">
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">Selected Room Details</h4>
-                      <p className="text-gray-700 font-semibold">{selectedRoom.room_type}</p>
-                      <p className="text-gray-500 text-xs mt-1">Max Occupancy: {selectedRoom.max_occupancy} Guests</p>
-                      <p className="text-rose-600 font-black text-xl mt-3">
-                        ₹{selectedRoom.room_price_per_day} <span className="text-gray-400 text-xs font-normal">/ night</span>
-                      </p>
+                      <div className="bg-rose-50/50 border border-rose-100 p-5 rounded-2xl">
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">Selected Room Details</h4>
+                        <p className="text-gray-700 font-semibold">{selectedRoom.room_type}</p>
+                        <p className="text-gray-500 text-xs mt-1">Max Occupancy: {selectedRoom.max_occupancy} Guests</p>
+                        <p className="text-rose-600 font-black text-xl mt-3">
+                          ₹{selectedRoom.room_price_per_day} <span className="text-gray-400 text-xs font-normal">/ night</span>
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
 
                 {/* Step 2: Guests */}
                 {bookingStep === 2 && (
@@ -1317,7 +1314,7 @@ const HotelDetailsPage = () => {
                 {hotelImages.map((img, idx) => (
                   <img
                     key={idx}
-                    src={getImageUrl(img)}
+                    src={img}
                     alt={`${hotel.name} Photo ${idx + 1}`}
                     className="w-full h-64 object-cover rounded-2xl"
                   />

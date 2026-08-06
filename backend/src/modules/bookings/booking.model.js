@@ -33,6 +33,9 @@ const hotelBookingSchema = new mongoose.Schema({
         enum: ["pending", "completed", "failed", "refunded"],
         default: "pending",
     },
+    razorpay_order_id: {
+        type: String,
+    },
     bookingStatus: {
         type: String,
         enum: ["confirmed", "cancelled", "completed"],

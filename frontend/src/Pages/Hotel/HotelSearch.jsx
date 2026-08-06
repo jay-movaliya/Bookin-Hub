@@ -141,14 +141,6 @@ const HotelSearchPage = () => {
     navigate(`/booking/hotel/${hotelId}`);
   };
 
-  const getImageUrl = (imagePath) => {
-    console.log("original path : ", imagePath)
-    const cleanedPath = imagePath.replace(/^public[\\/]/, '');
-    console.log("cleanedpath : ", cleanedPath)
-    console.log("final url : ", `${import.meta.env.VITE_API_URL}/${cleanedPath.replace(/\\/g, '/')}`)
-    return `${import.meta.env.VITE_API_URL}/${cleanedPath.replace(/\\/g, '/')}`;
-  };
-
   const handleImageLoad = (hotelId, index) => {
     setImageLoading(prev => ({
       ...prev,
@@ -350,7 +342,7 @@ const HotelSearchPage = () => {
                                 </div>
                               )}
                               <img
-                                src={getImageUrl(image)}
+                                src={image}
                                 alt={`${hotel.name} ${index + 1}`}
                                 className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${imageLoading[`${hotel._id}-${index}`] ? 'opacity-0' : 'opacity-100'}`}
                                 onLoad={() => handleImageLoad(hotel._id, index)}
@@ -439,13 +431,12 @@ const HotelSearchPage = () => {
                       </div>
 
                       <button
-                        className={`w-full py-3.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] ${
-                          hotel.status === "blocked"
-                            ? "bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 cursor-pointer"
-                            : hotel.status === "maintenance"
+                        className={`w-full py-3.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] ${hotel.status === "blocked"
+                          ? "bg-rose-100 text-rose-800 border border-rose-200 hover:bg-rose-200 cursor-pointer"
+                          : hotel.status === "maintenance"
                             ? "bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200"
                             : "bg-gray-900 hover:bg-black text-white shadow-gray-900/10 group-hover:shadow-gray-900/20"
-                        }`}
+                          }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleHotelClick(hotel._id);
@@ -454,8 +445,8 @@ const HotelSearchPage = () => {
                         {hotel.status === "blocked"
                           ? "License Expired / Suspended"
                           : hotel.status === "maintenance"
-                          ? "View Hotel (Maintenance)"
-                          : "View Details & Book"}
+                            ? "View Hotel (Maintenance)"
+                            : "View Details & Book"}
                       </button>
                     </div>
                   </div>
