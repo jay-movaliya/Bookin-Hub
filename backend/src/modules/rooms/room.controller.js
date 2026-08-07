@@ -4,6 +4,7 @@ import { ApiError } from "../../shared/ApiError.js";
 import { ApiResponse } from "../../shared/ApiResponse.js";
 import { asyncHandler } from "../../shared/asyncHandler.js";
 import { uploadMultipleOnCloudinary } from "../../utils/cloudinary.js";
+import { getRedisClient } from "../../config/redis.js";
 
 const addRooms = asyncHandler(async (req, res) => {
     const { hotel, room_type, room_price_per_day, status, facilities, max_occupancy, room_number } = req.body;
@@ -150,8 +151,21 @@ const deleteRoom = asyncHandler(async (req, res) => {
 const getRoomByhotelId = asyncHandler(async (req, res) => {
     const { hotelId } = req.params;
 
-    const hotel = await HotelRoom.find({ hotel: hotelId });
-    return res.status(200).json(new ApiResponse(200, hotel, "Hotel retrived successfully"));
+    const rooms = await HotelRoom.find({ hotel: hotelId }).lean();
+    
+    const redisClient = getRedisClient();
+    for (let room of rooms) {
+        const lockKey = `lock:room:${room._id}`;
+        const lockedByUserId = await redisClient.get(lockKey);
+        if (lockedByUserId) {
+            room.isLocked = true;
+            room.lockedByUserId = lockedByUserId;
+        } else {
+            room.isLocked = false;
+        }
+    }
+
+    return res.status(200).json(new ApiResponse(200, rooms, "Rooms retrived successfully"));
 });
 
 const getRooms = asyncHandler(async (req, res) => {

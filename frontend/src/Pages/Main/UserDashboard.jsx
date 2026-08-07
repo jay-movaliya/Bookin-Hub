@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { BASE_URL } from "../../../config";
 import Swal from "sweetalert2";
+import Cookies from "js-cookie";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -36,6 +37,47 @@ const UserDashboard = () => {
     profilePic: "",
   });
   const [editedUser, setEditedUser] = useState(user);
+  const [isUploadingPic, setIsUploadingPic] = useState(false);
+
+  const handleProfilePicUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("profilePic", file);
+
+    try {
+      setIsUploadingPic(true);
+      const token = localStorage.getItem("token") || Cookies.get("token");
+      
+      const response = await fetch(`${BASE_URL}/api/user/update-profile-pic`, {
+        method: "POST",
+        headers: {
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.data && data.data.token) {
+          localStorage.setItem("token", data.data.token);
+          if (typeof Cookies !== 'undefined') Cookies.set("token", data.data.token);
+        }
+        setUser(prev => ({ ...prev, profilePic: data.data.profilePic }));
+        setEditedUser(prev => ({ ...prev, profilePic: data.data.profilePic }));
+        Swal.fire('Success', 'Profile picture updated successfully', 'success');
+      } else {
+        Swal.fire('Error', data.message || 'Failed to update profile picture', 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'An error occurred while uploading', 'error');
+    } finally {
+      setIsUploadingPic(false);
+    }
+  };
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -272,14 +314,24 @@ const UserDashboard = () => {
             {/* Profile Info Card */}
             <div className="bg-white/80 backdrop-blur-xl border border-white/60 rounded-3xl p-6 shadow-sm space-y-5">
               <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-500 to-pink-600 p-0.5 shadow-sm">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                    {user.profilePic ? (
-                      <img src={user.profilePic} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <User size={28} className="text-slate-400" />
-                    )}
+                <div className="relative group">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-500 to-pink-600 p-0.5 shadow-sm">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                      {user.profilePic ? (
+                        <img src={user.profilePic} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={28} className="text-slate-400" />
+                      )}
+                    </div>
                   </div>
+                  <label className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                    {isUploadingPic ? (
+                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                       <Edit size={16} className="text-white" />
+                    )}
+                    <input type="file" className="hidden" accept="image/*" onChange={handleProfilePicUpload} disabled={isUploadingPic} />
+                  </label>
                 </div>
                 <div>
                   <h3 className="font-extrabold text-lg text-[#131b2e]">{user.name}</h3>
@@ -419,18 +471,38 @@ const UserDashboard = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Profile Picture URL
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Profile Picture
                   </label>
-                  <input
-                    type="text"
-                    value={editedUser.profilePic}
-                    onChange={(e) =>
-                      setEditedUser({ ...editedUser, profilePic: e.target.value })
-                    }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium focus:outline-none focus:border-[#b90538]"
-                    placeholder="https://..."
-                  />
+                  <label className="relative w-28 h-28 rounded-2xl border-2 border-dashed border-slate-300 hover:border-[#b90538] bg-slate-50 hover:bg-rose-50/50 flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden group mx-auto">
+                    {editedUser.profilePic ? (
+                      <>
+                        <img src={editedUser.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Edit size={20} className="text-white drop-shadow-md" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center text-slate-400 group-hover:text-[#b90538] transition-colors">
+                        <User size={28} className="mb-1" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                      </div>
+                    )}
+                    
+                    {isUploadingPic && (
+                      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-slate-200 border-t-[#b90538] rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                    
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleProfilePicUpload} 
+                      disabled={isUploadingPic} 
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -525,7 +597,7 @@ const UserDashboard = () => {
                 </button>
                 {selectedHotelBooking.bookingStatus?.toLowerCase() !== "cancelled" &&
                   selectedHotelBooking.bookingStatus?.toLowerCase() !== "completed" &&
-                  new Date(selectedHotelBooking.bookingEndDate || Date.now()) > new Date() && (
+                  new Date(new Date(selectedHotelBooking.bookingStartDate || Date.now()).setHours(0, 0, 0, 0)) > new Date(new Date().setHours(0, 0, 0, 0)) && (
                     <button
                       onClick={handleCancelBooking}
                       className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-md shadow-rose-600/20 cursor-pointer"

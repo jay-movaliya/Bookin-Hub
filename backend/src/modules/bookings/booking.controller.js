@@ -3,7 +3,10 @@ import { asyncHandler } from "../../shared/asyncHandler.js";
 import { HotelBooking } from "./booking.model.js";
 // import { HotelRoom } from "../rooms/room.model.js";
 import Hotel from "../hotels/hotel.model.js";
-import { sendBookingCancellation, sendBookingConfirmation, sendRatingEmail } from "../../services/email.service.js";
+import { sendBookingCancellation, sendRatingEmail, sendRefundNotification } from "../../services/email.service.js";
+import { getRedisClient } from "../../config/redis.js";
+import { enqueueNotification } from "../../queues/notification.queue.js";
+import crypto from "crypto";
 
 const createBooking = asyncHandler(async (req, res) => {
     try {
@@ -38,7 +41,7 @@ const createBooking = asyncHandler(async (req, res) => {
             return res.status(403).json({ message: "The operation license for this hotel has been suspended or expired. Booking is disabled.", status: false });
         }
 
-        const existingBooking = await HotelBooking.findOne({
+        const existingDbBooking = await HotelBooking.findOne({
             room,
             $or: [
                 { bookingStartDate: { $lte: bookingEndDate }, bookingEndDate: { $gte: bookingStartDate } },
@@ -46,23 +49,45 @@ const createBooking = asyncHandler(async (req, res) => {
             bookingStatus: { $ne: "cancelled" },
         });
 
-        if (existingBooking) {
+        if (existingDbBooking) {
             return res.status(400).json({ message: "Room not available for selected dates.", status: false });
         }
 
-        const newBooking = await HotelBooking.create({
+        // 1. Check Redis for an atomic lock on this room
+        const redisClient = getRedisClient();
+        const lockKey = `lock:room:${room}`;
+        const userIdStr = String(userId);
+
+        // Try to atomically set the lock if it doesn't exist (NX)
+        const lockAcquired = await redisClient.set(lockKey, userIdStr, "EX", 300, "NX");
+
+        if (!lockAcquired) {
+            // Lock already exists, let's see if it's ours
+            const currentLockOwner = await redisClient.get(lockKey);
+            if (currentLockOwner !== userIdStr) {
+                return res.status(400).json({ message: "This room is currently being booked by another customer. Please try again in 5 minutes.", status: false });
+            }
+            // If it is ours, renew the lock
+            await redisClient.setex(lockKey, 300, userIdStr);
+        }
+        const tempBookingId = crypto.randomUUID();
+
+        // 3. Store the temporary booking payload in Redis for 5 minutes
+        const bookingPayload = {
             hotel,
             user: userId,
             room,
             bookingStartDate,
             bookingEndDate,
             totalAmount,
-            paymentStatus: "pending",
             personDetails
-        });
-        await sendBookingConfirmation({ email: req.user.email, userName: req.user.name, bookingId: newBooking._id, hotelName: hotelObj.name, checkInDate: newBooking.bookingStartDate, checkOutDate: newBooking.bookingEndDate, totalAmount: newBooking.totalAmount });
-        res.status(201).json(new ApiResponse(200, { bookingId: newBooking._id }, "Booking done successfully!"));
+        };
+        const tempBookingKey = `temp_booking:${tempBookingId}`;
+        await redisClient.setex(tempBookingKey, 300, JSON.stringify(bookingPayload));
+
+        res.status(201).json(new ApiResponse(200, { bookingId: tempBookingId }, "Booking initiated. Please complete payment within 5 minutes!"));
     } catch (error) {
+        console.error("Booking error:", error);
         res.status(500).json({ message: "Error creating booking", error: error.message, status: false });
     }
 });
@@ -119,18 +144,26 @@ const updateStatus = asyncHandler(async (req, res) => {
     if (status == "completed") {
         booking.bookingStatus = "completed";
         await booking.save();
-        await sendRatingEmail({
-            email: booking.user.email,
-            userName: booking.user.name,
-            bookingId: booking._id,
-            hotelName: booking.hotel?.name
-        });
+        try {
+            await sendRatingEmail({
+                email: booking.user.email,
+                userName: booking.user.name,
+                bookingId: booking._id,
+                hotelName: booking.hotel?.name
+            });
+        } catch (emailError) {
+            console.error("Error sending rating email:", emailError.message);
+        }
 
         res.status(200).json(new ApiResponse(200, null, "Status updated successfully"));
     } else if (status == "cancelled") {
         booking.bookingStatus = status;
         await booking.save();
-        await sendBookingCancellation({ email: booking.user.email, userName: booking.user.name, bookingId: booking._id, hotelName: booking.hotel.name });
+        try {
+            await sendBookingCancellation({ email: booking.user.email, userName: booking.user.name, bookingId: booking._id, hotelName: booking.hotel.name });
+        } catch (emailError) {
+            console.error("Error sending cancellation email:", emailError.message);
+        }
         res.status(200).json(new ApiResponse(200, null, "Status updated successfully"));
     }
 });
@@ -150,10 +183,24 @@ const cancelBooking = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: "Booking already cancelled.", status: false });
         }
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const bookingStart = new Date(booking.bookingStartDate);
+        bookingStart.setHours(0, 0, 0, 0);
+
+        if (today >= bookingStart) {
+            return res.status(400).json({ message: "Bookings cannot be cancelled on or after the check-in date.", status: false });
+        }
+
         booking.bookingStatus = "cancelled";
         await booking.save();
 
-        await sendBookingCancellation({ email: req.user.email, userName: req.user.name, bookingId: booking._id, hotelName: booking.hotel.name });
+        try {
+            await sendBookingCancellation({ email: req.user.email, userName: req.user.name, bookingId: booking._id, hotelName: booking.hotel.name });
+        } catch (emailError) {
+            console.error("Error sending cancellation email:", emailError.message);
+        }
 
         res.status(200).json(new ApiResponse(200, null, "Booking cancelled successfully"));
     } catch (error) {
@@ -172,8 +219,27 @@ const checkRoomAvailability = asyncHandler(async (req, res) => {
             bookingStatus: { $ne: "cancelled" },
         });
 
-        const isAvailable = conflictingBookings.length === 0;
-        res.status(200).json({ isAvailable });
+        if (conflictingBookings.length > 0) {
+            return res.status(200).json({ isAvailable: false });
+        }
+
+        const redisClient = getRedisClient();
+        const lockKey = `lock:room:${roomId}`;
+        const userIdStr = String(req.user._id);
+
+        // Try to atomically set the lock
+        const lockAcquired = await redisClient.set(lockKey, userIdStr, "EX", 300, "NX");
+
+        if (!lockAcquired) {
+            const currentLockOwner = await redisClient.get(lockKey);
+            if (currentLockOwner !== userIdStr) {
+                return res.status(200).json({ isAvailable: false, message: "Room is currently locked by another user" });
+            }
+            // Renew our own lock
+            await redisClient.setex(lockKey, 300, userIdStr);
+        }
+
+        res.status(200).json({ isAvailable: true });
     } catch (error) {
         res.status(500).json({ message: "Error checking availability", error: error.message, status: false });
     }
@@ -194,4 +260,94 @@ const getRoomBookingsByHotel = asyncHandler(async (req, res) => {
     }
 });
 
-export { checkRoomAvailability, createBooking, getUserBookings, getOwnerBookings, updateStatus, cancelBooking, getRoomBookingsByHotel };
+const initiateRoomLock = asyncHandler(async (req, res) => {
+    try {
+        const { roomId } = req.body;
+        const redisClient = getRedisClient();
+        const lockKey = `lock:room:${roomId}`;
+        const userIdStr = String(req.user._id);
+
+        const lockAcquired = await redisClient.set(lockKey, userIdStr, "EX", 300, "NX");
+
+        if (!lockAcquired) {
+            const currentLockOwner = await redisClient.get(lockKey);
+            if (currentLockOwner !== userIdStr) {
+                return res.status(200).json({ success: false, message: "Room is currently being booked by another user" });
+            }
+            // Renew our own lock
+            await redisClient.setex(lockKey, 300, userIdStr);
+        }
+
+        res.status(200).json({ success: true, message: "Room locked temporarily" });
+    } catch (error) {
+        res.status(500).json({ message: "Error locking room", error: error.message, status: false });
+    }
+});
+
+const getRefundPendingBookings = asyncHandler(async (req, res) => {
+    try {
+        const cancelledBookings = await HotelBooking.find({ bookingStatus: "cancelled" })
+            .populate("hotel")
+            .populate("user", "name email contact profilePic")
+            .populate("room", "room_type room_number");
+
+        res.status(200).json(new ApiResponse(200, cancelledBookings, "Refund pending bookings retrieved successfully"));
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching refund pending bookings", error: error.message, status: false });
+    }
+});
+
+const getRefundCompletedBookings = asyncHandler(async (req, res) => {
+    try {
+        const refundedBookings = await HotelBooking.find({ bookingStatus: "refunded" })
+            .populate("hotel")
+            .populate("user", "name email contact profilePic")
+            .populate("room", "room_type room_number");
+
+        res.status(200).json(new ApiResponse(200, refundedBookings, "Refund completed bookings retrieved successfully"));
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching refund completed bookings", error: error.message, status: false });
+    }
+});
+
+const updateBookingToRefunded = asyncHandler(async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        const booking = await HotelBooking.findById(bookingId).populate("hotel").populate("user");
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found", status: false });
+        }
+
+        if (booking.bookingStatus !== "cancelled") {
+            return res.status(400).json({ message: "Booking must be cancelled before it can be refunded", status: false });
+        }
+
+        booking.bookingStatus = "refunded";
+        await booking.save();
+
+        try {
+            if (booking.user && booking.user.email) {
+                await enqueueNotification({
+                    channel: "email",
+                    type: "booking_refunded_user",
+                    data: {
+                        email: booking.user.email,
+                        userName: booking.user.name,
+                        bookingId: booking._id,
+                        hotelName: booking.hotel?.name || "Hotel",
+                        totalAmount: booking.totalAmount
+                    }
+                });
+            }
+        } catch (notificationError) {
+            console.error("Error sending refund notification:", notificationError.message);
+        }
+
+        res.status(200).json(new ApiResponse(200, null, "Booking status updated to refunded"));
+    } catch (error) {
+        res.status(500).json({ message: "Error updating booking status", error: error.message, status: false });
+    }
+});
+
+export { checkRoomAvailability, createBooking, getUserBookings, getOwnerBookings, updateStatus, cancelBooking, getRoomBookingsByHotel, initiateRoomLock, getRefundPendingBookings, getRefundCompletedBookings, updateBookingToRefunded };

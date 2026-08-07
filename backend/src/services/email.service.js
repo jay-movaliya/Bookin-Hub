@@ -104,6 +104,32 @@ export const sendBookingCancellation = async ({ email, userName, bookingId, hote
     await transporter.sendMail(mailOptions);
 };
 
+export const sendRefundNotification = async ({ email, userName, bookingId, hotelName, totalAmount }) => {
+    const mailOptions = {
+        from: '"Bookin-Hub"',
+        to: email,
+        subject: `Refund Processed for your booking at ${hotelName}`,
+        html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4CAF50;">Refund Processed</h2>
+        <p>Hi ${userName},</p>
+        <p>We wanted to let you know that your refund of <strong>₹ ${Number(totalAmount).toLocaleString('en-IN')}</strong> for your cancelled booking at <strong>${hotelName}</strong> (Booking ID: ${bookingId}) has been successfully processed by our team.</p>
+        <p>Please note that it may take 5-7 business days for the amount to reflect in your original payment method.</p>
+        
+        <div style="margin-top: 30px; text-align: center;">
+          <a href="${process.env.FRONTEND_URL}" 
+             style="background: #2196F3; color: white; padding: 12px 24px; 
+                    text-decoration: none; border-radius: 4px; font-weight: bold;">
+            Book Another Stay
+          </a>
+        </div>
+      </div>
+    `
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
 export const sendOtpEmail = async ({ email, otp, subject = "BookinHub OTP Verification" }) => {
     const smtpUser = process.env.SMTP_USER;
     const mailOptions = {

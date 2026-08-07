@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { HotelBooking } from "../bookings/booking.model.js";
+import { addPaymentToQueue } from "../../queues/payment.queue.js";
 
 export const razorpayWebhook = async (req, res) => {
     try {
@@ -17,16 +17,8 @@ export const razorpayWebhook = async (req, res) => {
         if (digest === signature) {
             const event = req.body.event;
 
-            // Handle both payment.captured and order.paid just in case
             if (event === "payment.captured" || event === "order.paid") {
-                const orderId = req.body.payload.payment.entity.order_id;
-                
-                if (orderId) {
-                    await HotelBooking.findOneAndUpdate(
-                        { razorpay_order_id: orderId },
-                        { paymentStatus: "completed" }
-                    );
-                }
+                await addPaymentToQueue({ event, payload: req.body.payload });
             }
 
             res.status(200).json({ status: "ok" });

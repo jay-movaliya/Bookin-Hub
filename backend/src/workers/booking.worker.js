@@ -73,14 +73,14 @@ export const startBookingWorker = () => {
                 logContent += `[${timestamp}] ${message}\n`;
             });
 
-            console.log(`✅ Updated ${modifiedCount} bookings. Emails sent: ${updatedBookings.length}`);
+            console.log(` Updated ${modifiedCount} bookings. Emails sent: ${updatedBookings.length}`);
         } catch (error) {
-            logContent += `[${timestamp}] ❌ Error: ${error.message}\n`;
-            console.error("❌ Cron job failed:", error);
+            logContent += `[${timestamp}] Error: ${error.message}\n`;
+            console.error(" Cron job failed:", error);
         }
 
         fs.appendFile(logFile, logContent, (err) => {
-            if (err) console.error("❌ Failed to write logs:", err);
+            if (err) console.error(" Failed to write logs:", err);
         });
     });
 };

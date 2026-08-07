@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import { FaUserCheck, FaUserClock, FaHotel, FaSignOutAlt, FaBuilding, FaClock } from "react-icons/fa";
+import { FaUserCheck, FaUserClock, FaHotel, FaSignOutAlt, FaBuilding, FaClock, FaMoneyBillWave } from "react-icons/fa";
 
 function SuperSideBar() {
   const location = useLocation();
@@ -10,6 +10,7 @@ function SuperSideBar() {
   const isPendingActive = location.pathname.startsWith("/super/dashboard/pending-hotel-owner");
   const isApprovedHotelsActive = location.pathname.startsWith("/super/dashboard/approved-hotels");
   const isPendingHotelsActive = location.pathname.startsWith("/super/dashboard/pending-hotels");
+  const isRefundPendingActive = location.pathname.startsWith("/super/dashboard/refund-pending");
 
   const handleLogout = () => {
     Cookies.remove("token");
@@ -88,6 +89,25 @@ function SuperSideBar() {
               >
                 <FaClock className={`mr-3 text-lg ${isPendingHotelsActive ? 'text-red-500' : 'text-slate-400'}`} />
                 <span className={`${isPendingHotelsActive ? 'text-slate-900 font-semibold' : 'text-slate-500'}`}>Pending Hotels</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-4">Financials</div>
+          <ul className="space-y-1.5">
+            <li>
+              <Link
+                to="/super/dashboard/refund-pending"
+                className={`flex items-center px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${isRefundPendingActive
+                  ? "bg-red-50 text-red-600 shadow-[0_4px_20px_rgba(239,68,68,0.1)] border border-red-100/50"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                aria-label="Refund Pending"
+              >
+                <FaMoneyBillWave className={`mr-3 text-lg ${isRefundPendingActive ? 'text-red-500' : 'text-slate-400'}`} />
+                <span className={`${isRefundPendingActive ? 'text-slate-900 font-semibold' : 'text-slate-500'}`}>Refund Pending</span>
               </Link>
             </li>
           </ul>

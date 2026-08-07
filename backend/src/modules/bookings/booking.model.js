@@ -38,8 +38,12 @@ const hotelBookingSchema = new mongoose.Schema({
     },
     bookingStatus: {
         type: String,
-        enum: ["confirmed", "cancelled", "completed"],
-        default: "confirmed",
+        enum: ["confirmed", "cancelled", "completed", "pending_payment", "refunded"],
+        default: "pending_payment",
+    },
+    expiresAt: {
+        type: Date,
+        default: null,
     },
     personDetails: [{
         name: {

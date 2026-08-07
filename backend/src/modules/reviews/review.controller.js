@@ -72,4 +72,24 @@ const getrating = asyncHandler(async (req, res) => {
     });
 });
 
-export { submitRating, getrating };
+const getHotelRatingsPublic = asyncHandler(async (req, res) => {
+    const { hotelId } = req.params;
+    
+    if (!hotelId) {
+        return res.status(400).json({
+            success: false,
+            message: "Hotel ID is required"
+        });
+    }
+
+    const ratings = await Rating.find({ hotel: hotelId })
+        .populate('user', 'name email profilePic')
+        .sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        data: ratings
+    });
+});
+
+export { submitRating, getrating, getHotelRatingsPublic };

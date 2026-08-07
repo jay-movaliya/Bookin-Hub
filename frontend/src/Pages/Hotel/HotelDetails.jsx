@@ -50,6 +50,7 @@ const HotelDetailsPage = () => {
   });
 
   const [roomBookings, setRoomBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   // Lottie animation options
   const defaultOptions = {
@@ -121,6 +122,16 @@ const HotelDetailsPage = () => {
           console.error("Error fetching room bookings:", bErr);
         }
 
+        try {
+          const reviewsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/hotel-ratings/${id}`);
+          if (reviewsResponse.ok) {
+            const reviewsData = await reviewsResponse.json();
+            setReviews(reviewsData.data || []);
+          }
+        } catch (rErr) {
+          console.error("Error fetching reviews:", rErr);
+        }
+
         setHotel(hotelData.data);
         setRooms(roomsData.data);
 
@@ -179,8 +190,35 @@ const HotelDetailsPage = () => {
     return <FiCheck />;
   };
 
-  const handleBookingModalOpen = (room) => {
-    setSelectedRoom(room || (rooms.length > 0 ? rooms[0] : null));
+  const handleBookingModalOpen = async (room) => {
+    const selected = room || (rooms.length > 0 ? rooms[0] : null);
+    if (!selected) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/booking/rooms/lock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ roomId: selected._id })
+      });
+      
+      const data = await response.json();
+      if (!data.success && response.status === 200) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Room Unavailable',
+          text: 'This room is currently being booked by another customer. Please try again in 5 minutes.',
+          confirmButtonColor: '#ef4444',
+        });
+        return; // Don't open the modal if someone else locked it!
+      }
+    } catch (error) {
+       console.error("Failed to lock room", error);
+    }
+
+    setSelectedRoom(selected);
     setShowBookingModal(true);
     setBookingStep(1);
     setBookingConfirmed(false);
@@ -278,6 +316,17 @@ const HotelDetailsPage = () => {
         badgeClass: "bg-amber-100 text-amber-800 border-amber-300",
         isBookable: false,
         bookingText: null,
+        bookedRanges: [],
+      };
+    }
+
+    if (room.isLocked && room.lockedByUserId !== userDetails.id) {
+      return {
+        status: "locked",
+        label: "Temporarily Locked",
+        badgeClass: "bg-orange-100 text-orange-800 border-orange-300 border",
+        isBookable: false,
+        bookingText: "Currently being booked by someone else",
         bookedRanges: [],
       };
     }
@@ -900,7 +949,7 @@ const HotelDetailsPage = () => {
                             disabled
                             className="w-full py-3.5 bg-gray-200 text-gray-400 font-bold rounded-xl border border-gray-300 cursor-not-allowed text-sm"
                           >
-                            Under Maintenance
+                            {statusInfo.status === 'locked' ? 'Temporarily Locked' : (statusInfo.status === 'blocked' ? 'Unavailable' : 'Under Maintenance')}
                           </button>
                         ) : (
                           <button
@@ -928,63 +977,57 @@ const HotelDetailsPage = () => {
                 <p className="text-sm text-gray-500 mt-1">Based on verified guest experiences</p>
               </div>
               <div className="flex items-center bg-rose-50 border border-rose-100 p-4 rounded-2xl">
-                <span className="text-3xl font-black text-rose-600 mr-3">4.8</span>
+                <span className="text-3xl font-black text-rose-600 mr-3">{hotel?.averageRating || 5.0}</span>
                 <div className="flex flex-col">
                   <div className="flex text-amber-400">
                     {[...Array(5)].map((_, i) => (
-                      <FiStar key={i} className="fill-amber-400 text-amber-400 text-sm" />
+                      <FiStar key={i} className={i < Math.round(hotel?.averageRating || 5) ? "fill-amber-400 text-amber-400 text-sm" : "text-gray-300 text-sm"} />
                     ))}
                   </div>
-                  <span className="text-xs font-bold text-rose-700 mt-1">Excellent Rating</span>
+                  <span className="text-xs font-bold text-rose-700 mt-1">{hotel?.averageRating >= 4 ? "Excellent Rating" : (hotel?.averageRating >= 3 ? "Good Rating" : "Average Rating")}</span>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border border-gray-100 p-5 rounded-2xl bg-white/90">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 font-bold flex items-center justify-center text-sm">
-                      JD
+            {reviews && reviews.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {reviews.map((review, index) => (
+                  <div key={index} className="border border-gray-100 p-5 rounded-2xl bg-white/90 shadow-sm transition-all hover:shadow-md">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-sm shrink-0">
+                          {review.user?.profilePic ? (
+                            <img src={review.user.profilePic} alt={review.user.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{review.user?.name ? review.user.name.substring(0, 2).toUpperCase() : 'U'}</span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-gray-900">{review.user?.name || "Guest"}</p>
+                          <p className="text-xs text-gray-400">Verified Stay</p>
+                        </div>
+                      </div>
+                      <div className="flex text-amber-400 text-xs shrink-0">
+                        {[...Array(5)].map((_, i) => (
+                          <FiStar key={i} className={i < (review.rating || 5) ? "fill-amber-400 text-amber-400" : "text-gray-300"} />
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Jane Doe</p>
-                      <p className="text-xs text-gray-400">Verified Stay</p>
+                    <p className="text-sm text-gray-600 italic">
+                      "{review.review || "No comments provided."}"
+                    </p>
+                    <div className="text-[10px] text-gray-400 mt-3 text-right">
+                      {new Date(review.createdAt).toLocaleDateString("en-GB")}
                     </div>
                   </div>
-                  <div className="flex text-amber-400 text-xs">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar key={i} className="fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 italic">
-                  "Absolutely fantastic experience! The staff was incredibly welcoming and the rooms were spotless and luxurious."
-                </p>
+                ))}
               </div>
-
-              <div className="border border-gray-100 p-5 rounded-2xl bg-white/90">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 font-bold flex items-center justify-center text-sm">
-                      MS
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Michael Smith</p>
-                      <p className="text-xs text-gray-400">Verified Stay</p>
-                    </div>
-                  </div>
-                  <div className="flex text-amber-400 text-xs">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar key={i} className="fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 italic">
-                  "Great location, comfortable beds, and smooth check-in process. Will definitely book again on Bookin-Hub!"
-                </p>
+            ) : (
+              <div className="text-center p-8 bg-gray-50 rounded-2xl border border-gray-100">
+                <p className="text-gray-500 font-medium">No reviews yet for this hotel.</p>
+                <p className="text-sm text-gray-400 mt-1">Be the first to leave a review after your stay!</p>
               </div>
-            </div>
+            )}
           </section>
 
         </div>

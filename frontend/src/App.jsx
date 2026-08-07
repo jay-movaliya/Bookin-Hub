@@ -38,6 +38,7 @@ import RoomDashboard from "./Pages/Hotel/Owner/Dashboard/RoomDashboard.jsx";
 
 import SuperLayout from "./Pages/Super/SuperLayout.jsx";
 import SuperHotelAdmin from "./Pages/Super/SuperHotelAdmin.jsx";
+import SuperRefundPending from "./Pages/Super/SuperRefundPending.jsx";
 import About from "./Pages/Main/About.jsx";
 import Contact from "./Pages/Main/contact.jsx";
 import RateStay from "./Pages/Hotel/RateStay.jsx";
@@ -186,6 +187,14 @@ function App() {
               </HotelOwnerRoute>
             }
           />
+          <Route
+            path="profile"
+            element={
+              <HotelOwnerRoute>
+                <HotelAdminPanel />
+              </HotelOwnerRoute>
+            }
+          />
         </Route>
 
         <Route path="/super/dashboard" element={<AdminRoute><SuperLayout /></AdminRoute>}>
@@ -197,6 +206,7 @@ function App() {
           <Route path="pending-hotel-owner" element={<SuperHotelAdmin defaultTab="unapproved" />} />
           <Route path="approved-hotels" element={<SuperHotelAdmin defaultTab="approved-hotels" />} />
           <Route path="pending-hotels" element={<SuperHotelAdmin defaultTab="pending-hotels" />} />
+          <Route path="refund-pending" element={<SuperRefundPending />} />
           <Route path="hotel" element={<Navigate to="approved-hotels" replace />} />
         </Route>
       </Routes>

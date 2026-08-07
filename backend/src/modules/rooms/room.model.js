@@ -15,7 +15,8 @@ const hotelRoomSchema = new mongoose.Schema({
     },
     room_images: [
         {
-            type: String
+            type: String,
+            unique: true
         }
     ],
     status: {

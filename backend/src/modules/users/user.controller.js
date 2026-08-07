@@ -4,8 +4,9 @@ import nodemailer from "nodemailer";
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
 import { redisService } from "../../services/redis.service.js";
-import { addSmsToQueue } from "../../queues/sms.queue.js";
-import { addEmailToQueue } from "../../queues/email.queue.js";
+import { enqueueNotification } from "../../queues/notification.queue.js";
+import { uploadOnCloudinary } from "../../utils/cloudinary.js";
+import { HotelOwner } from "../owners/owner.model.js";
 const registerUser = async (req, res) => {
   const { name, gender, contact, email, type, password } = req.body;
 
@@ -32,16 +33,19 @@ const registerUser = async (req, res) => {
   const tempUser = { name, gender, contact, email, type, password: hashedPAssword, otp };
   const redisKey = `temp_user_${email}`;
   await redisService.set(redisKey, tempUser, 600);
-
-  // Send OTP via SMS (Assuming India +91 prefix if not present)
+  // Send OTP via SMS
   let phone = String(contact);
   if (!phone.startsWith('+')) {
     phone = `+91${phone}`;
   }
 
-  await addSmsToQueue({
-    phoneNumber: phone,
-    message: `Your BookinHub verification code is: ${otp}.`
+  await enqueueNotification({
+    channel: 'sms',
+    type: 'otp_sms',
+    data: {
+      phoneNumber: phone,
+      message: `Your BookinHub verification code is: ${otp}.`
+    }
   });
 
   // console.log(otp)
@@ -87,10 +91,12 @@ const verifyOtp = async (req, res) => {
   });
 
   // Enqueue Welcome email
-  await addEmailToQueue({
-    type: 'welcome',
-    email: user.email,
-    userName: user.name
+  await enqueueNotification({
+    type: 'welcome_email',
+    data: {
+      email: user.email,
+      userName: user.name
+    }
   });
 
   // Cleanup Redis
@@ -241,4 +247,44 @@ const resetPassword = async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, "Password reset successful"));
 };
 
-export { registerUser, verifyOtp, loginUser, forgotPassword, resetPassword };
+const updateProfilePic = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    if (!req.file) {
+      return res.status(400).json(new ApiResponse(400, null, "No image file provided"));
+    }
+
+    const localFilePath = req.file.path;
+    const profilePicUrl = await uploadOnCloudinary(localFilePath, "bookin-hub/profiles");
+
+    if (!profilePicUrl) {
+      return res.status(500).json(new ApiResponse(500, null, "Failed to upload image to Cloudinary"));
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: profilePicUrl },
+      { new: true }
+    );
+
+    // If the user is also a hotel owner, we need to issue an owner token, otherwise a standard user token.
+    let hotelOwner = null;
+    if (updatedUser.type === "hotelOwner" || req.hotel_owner) {
+        hotelOwner = await HotelOwner.findOne({ user: updatedUser._id }).populate("user");
+    }
+
+    const tokenPayload = hotelOwner 
+      ? { _id: hotelOwner._id, user: updatedUser, hotel_owner: true }
+      : { _id: updatedUser._id, user: updatedUser };
+
+    const token = jwt.sign(tokenPayload, process.env.SECRET_KEY);
+
+    res.status(200).json(new ApiResponse(200, { token, user: updatedUser, profilePic: profilePicUrl }, "Profile picture updated successfully"));
+  } catch (error) {
+    console.error("Profile pic update error:", error);
+    res.status(500).json(new ApiResponse(500, null, "Error updating profile picture"));
+  }
+};
+
+export { registerUser, verifyOtp, loginUser, forgotPassword, resetPassword, updateProfilePic };

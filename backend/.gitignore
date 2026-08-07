@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+ngrok_webhookcommand.md
+
 env.js
 .env
 .env.*.local
