@@ -1,6 +1,6 @@
 # 🏨 Bookin Hub
 
-A **multi-vendor hotel and venue booking marketplace** — users discover hotels, book rooms or time slots, and pay via Razorpay. Built with async job queues (BullMQ), Redis caching, Role-Based Access Control (RBAC), and email/SMS notifications.
+A **multi-vendor hotel booking marketplace** — users discover hotels, book rooms, and pay via Razorpay. Built with async job queues (BullMQ), Redis caching, Role-Based Access Control (RBAC), and email/SMS notifications.
 
 ---
 
@@ -32,7 +32,7 @@ A **multi-vendor hotel and venue booking marketplace** — users discover hotels
        ▼                  │  │ (TTL 120s) │  │
 ┌──────────────┐          │  ├────────────┤  │
 │    MongoDB   │          │  │ BullMQ     │  │
-│(via Mongoose)│          │  │ Backend    │  │
+│  (via atlas) │          │  │ Backend    │  │
 └──────────────┘          │  └────────────┘  │
                           └──────────────────┘
                                    │
@@ -43,10 +43,10 @@ A **multi-vendor hotel and venue booking marketplace** — users discover hotels
                    │  Worker    │  │   Worker     │
                    └────────────┘  └──────┬───────┘
                                           ▼
-                                   ┌──────────────┐
-                                   │  Nodemailer  │
-                                   │ (Email / SMS)│
-                                   └──────────────┘
+                                   ┌─────────────────────┐
+                                   │  Nodemailer(Email)/ │
+                                   │   (Twilio SMS OTP)  │
+                                   └─────────────────────┘
 ```
 
 ---
@@ -56,10 +56,10 @@ A **multi-vendor hotel and venue booking marketplace** — users discover hotels
 ### Booking Lifecycle
 
 ```
-CART → PENDING_PAYMENT (slot/room locked, 15min expiry)
+CART → PENDING_PAYMENT (slot/room locked, 5min expiry)
          ├── Payment success → CONFIRMED
-         ├── Timeout → CART (slot/room freed)
-         └── User cancels → CART
+         ├── Timeout → Booking slot/room freed
+         └── User cancels → Booking Slot
 CONFIRMED → User cancels → CANCELLED
 CONFIRMED → Event/Stay passes → COMPLETED
 ```
@@ -76,7 +76,7 @@ Razorpay webhook → API verifies HMAC → enqueues job → returns 200 OK (inst
                 Notification Worker → Nodemailer email / Twilio SMS (or console mock)
 ```
 
-### Hotel/Venue Cache Flow
+### Hotel Cache Flow
 
 ```
 API call → Redis check?
@@ -89,28 +89,27 @@ API call → Redis check?
 ## ✨ Features
 
 ### 👤 Users
-- OTP login via Twilio SMS
-- Browse hotels and venues (Redis-cached) with photo galleries (Cloudinary)
-- Book venues/rooms with real-time availability calendar
+- OTP Register via Twilio SMS
+- Login via JWT Auth
+- Browse hotels (Redis-cached) with photo galleries (Cloudinary)
+- Book rooms with real-time availability calendar
 - Pay via Razorpay (cards, UPI, netbanking)
-- Wishlist management
 - Booking history & cancellation
-- Email/SMS notifications on confirm/cancel
+- Email/SMS notifications on confirm/cancel/refund
 
 ### 🏢 Providers (Hosts/Hoteliers)
 - KYC onboarding with approval workflow
-- Hotel/Venue CRUD (photos, types, features, pricing)
-- Service listing management
+- Hotel/Room CRUD (photos, types, features, pricing)
 - Booking dashboard & revenue insights
 
 ### 🛡️ Admin
-- Provider/venue/service approval
-- RBAC with granular table+operation permissions
-- User-role assignment & action logs
+- **Hotel Owner Management**: Approve/reject KYC and onboarding for hoteliers
+- **Hotel Management**: Approve, reject, and block/unblock hotel listings
+- **Refund Processing**: View pending/completed refunds and process cancellations
 
 ### ⚡ Background Jobs
 - **BullMQ**: Payment processing + email notifications run asynchronously
-- **Redis caching**: Hotel/Venue listing/detail endpoints cached with 120s TTL
+- **Redis caching**: Hotel listing/detail endpoints cached with 120s TTL
 - **Idempotent webhooks**: Duplicate Razorpay webhooks safely skipped
 - **Graceful degradation**: Redis down → DB fallback
 
@@ -137,54 +136,64 @@ backend/
 
 frontend/
 ├── package.json
+├── vite.config.js               # Vite bundler configuration
 └── src/
-    ├── App.jsx                  # Main App component
+    ├── App.jsx                  # Main App component & Router logic
     ├── main.jsx                 # React DOM entry point
-    ├── Components/              # Reusable UI elements
-    ├── Pages/                   # React Router pages
+    ├── Components/              # Shared UI elements (Navbar, Footer, etc.)
+    ├── Pages/                   # Application views
+    │   ├── Main/                # End-user pages (Search, Booking, Profile)
+    │   ├── Hotel/               # Hotel Owner dashboard (CRUD rooms/hotels)
+    │   └── Super/               # Admin dashboard (Approvals & Management)
     ├── assets/                  # Static assets (images, icons)
-    └── index.css                # Tailwind & global styles
+    └── index.css                # Tailwind CSS imports & global variables
 ```
 
 ---
 
-## 📖 API Overview (Example Endpoints)
+## 📖 API Overview (Core Endpoints)
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/signup` | Create account |
-| POST | `/api/v1/auth/otp` | Send OTP via Twilio |
-| POST | `/api/v1/auth/otp/verify` | Verify OTP & login |
-| GET | `/api/v1/auth/me` | Current user profile |
+### Users (`/api/user`)
+| Method |    Endpoint   | Description          |
+|--------|---------------|----------------------|
+| POST   | `/register`   | Register user        |
+| POST   | `/login`      | User login           |
+| POST   | `/verify-otp` | Verify OTP           |
 
-### Hotels & Venues (Public)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/venues` | List venues/hotels (cached) |
-| GET | `/api/v1/venues/:venueId` | Venue details (cached) |
-| GET | `/api/v1/venues/:venueId/availability` | Slot/Room availability |
+### Hotel Owners (`/api/hotel/owner`)
+| Method |   Endpoint   | Description          |
+|--------|--------------|----------------------|
+| POST   | `/register`  | Register hotel owner |
+| POST   | `/login`     | Owner login          |
+| GET    | `/profile`   | Get owner profile    |
 
-### Booking
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/book/venues/:venueId` | Create booking |
-| GET | `/api/v1/book/booking/:bookingId` | Booking details |
-| DELETE | `/api/v1/book/booking/:bookingId` | Cancel booking |
-| GET | `/api/v1/book/my-bookings` | User bookings |
+### Hotels & Rooms (`/api/hotel`)
+| Method |   Endpoint        |       Description          |
+|--------|-------------------|----------------------------|
+| GET    | `/search`         | Search hotels (cached)     |
+| GET    | `/:id`            | Hotel details (cached)     |
+| POST   | `/create`         | Create hotel (Owner)       |
+| POST   | `/room/create`    | Add rooms to hotel (Owner) |
 
-### Payment
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/payment/create-order` | Create Razorpay order |
-| POST | `/api/v1/payment/verify-payment` | Verify payment |
-| POST | `/api/v1/payment/webhook` | Razorpay webhook → enqueues job |
+### Bookings (`/api/booking`)
+| Method |  Endpoint |   Description          |
+|--------|-----------|------------------------|
+| POST   | `/`       |   Create booking       |
+| GET    | `/hotel`  |   User's bookings      |
+| POST   | `/cancel` |   Cancel booking       |
 
-### Wishlist
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/wishlist/my-wishlist` | View user wishlist |
-| POST | `/api/v1/wishlist/venues/:venueId/toggle` | Toggle wishlist |
+### Payments (`/payment`)
+| Method |      Endpoint     |           Description           |
+|--------|-------------------|---------------------------------|
+| POST   | `/create-order`   | Create Razorpay order           |
+| POST   | `/verify-payment` | Verify payment                  |
+| POST   | `/webhook`        | Razorpay webhook → enqueues job |
+
+### Reviews (`/api/hotel-ratings`)
+| Method |    Endpoint    | Description           |
+|--------|----------------|-----------------------|
+| POST   | `/submit`      | Submit rating         |
+| GET    | `/:hotelId`    | Get hotel ratings     |
 
 ---
 
